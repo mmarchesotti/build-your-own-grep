@@ -53,25 +53,31 @@ func matchLine(line []byte, pattern string) (bool, error) {
 	var ok bool
 	specialPatterns := []string{`\d`, `\w`}
 
-	if !(utf8.RuneCountInString(pattern) == 1 ||
-		contains(specialPatterns, pattern) ||
-		(strings.HasPrefix(pattern, "[") && strings.HasSuffix(pattern, "]"))) {
+	isSingleCharacter := utf8.RuneCountInString(pattern) == 1
+	isSpecialPattern := contains(specialPatterns, pattern)
+	isCharacterGroup := strings.HasPrefix(pattern, "[") && strings.HasSuffix(pattern, "]")
+	isNegativeCharacterGroup := strings.HasPrefix(pattern, "[^") && strings.HasSuffix(pattern, "]")
+
+	if !(isSingleCharacter || isSpecialPattern || isCharacterGroup) {
 		return false, fmt.Errorf("unsupported pattern: %q", pattern)
 	}
 
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Fprintln(os.Stderr, "Logs from your program will appear here!")
 
-	if pattern == `\d` {
-		pattern = "1234567890"
+	if isNegativeCharacterGroup {
+		pattern = pattern[2 : len(pattern)-1]
+		ok = !bytes.ContainsAny(line, pattern)
+	} else {
+		if pattern == `\d` {
+			pattern = "1234567890"
+		} else if pattern == `\w` {
+			pattern = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_"
+		} else if isCharacterGroup {
+			pattern = pattern[1 : len(pattern)-1]
+		}
+		ok = bytes.ContainsAny(line, pattern)
 	}
-	if pattern == `\w` {
-		pattern = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_"
-	}
-	if strings.HasPrefix(pattern, "[") && strings.HasSuffix(pattern, "]") {
-		pattern = pattern[1 : len(pattern)-1]
-	}
-	ok = bytes.ContainsAny(line, pattern)
 
 	return ok, nil
 }
