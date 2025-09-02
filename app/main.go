@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -52,7 +53,9 @@ func matchLine(line []byte, pattern string) (bool, error) {
 	var ok bool
 	specialPatterns := []string{`\d`, `\w`}
 
-	if utf8.RuneCountInString(pattern) != 1 && !contains(specialPatterns, pattern) {
+	if !(utf8.RuneCountInString(pattern) == 1 ||
+		contains(specialPatterns, pattern) ||
+		(strings.HasPrefix(pattern, "[") && strings.HasSuffix(pattern, "]"))) {
 		return false, fmt.Errorf("unsupported pattern: %q", pattern)
 	}
 
@@ -64,6 +67,9 @@ func matchLine(line []byte, pattern string) (bool, error) {
 	}
 	if pattern == `\w` {
 		pattern = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_"
+	}
+	if strings.HasPrefix(pattern, "[") && strings.HasSuffix(pattern, "]") {
+		pattern = pattern[1 : len(pattern)-1]
 	}
 	ok = bytes.ContainsAny(line, pattern)
 
