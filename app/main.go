@@ -49,6 +49,15 @@ func contains(slice []string, target string) bool {
 	return false
 }
 
+func isNotContained(line []byte, pattern string) bool {
+	for _, character := range line {
+		if !strings.ContainsRune(pattern, rune(character)) {
+			return true
+		}
+	}
+	return false
+}
+
 func matchLine(line []byte, pattern string) (bool, error) {
 	var ok bool
 	specialPatterns := []string{`\d`, `\w`}
@@ -67,7 +76,7 @@ func matchLine(line []byte, pattern string) (bool, error) {
 
 	if isNegativeCharacterGroup {
 		pattern = pattern[2 : len(pattern)-1]
-		ok = !bytes.ContainsAny(line, pattern)
+		ok = isNotContained(line, pattern)
 	} else {
 		if pattern == `\d` {
 			pattern = "1234567890"
