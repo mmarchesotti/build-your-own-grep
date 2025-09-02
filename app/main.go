@@ -39,10 +39,20 @@ func main() {
 	// default exit code is 0 which means success
 }
 
+func contains(slice []string, target string) bool {
+	for _, element := range slice {
+		if element == target {
+			return true
+		}
+	}
+	return false
+}
+
 func matchLine(line []byte, pattern string) (bool, error) {
 	var ok bool
+	specialPatterns := []string{`\d`, `\w`}
 
-	if utf8.RuneCountInString(pattern) != 1 && pattern != `\d` {
+	if utf8.RuneCountInString(pattern) != 1 && !contains(specialPatterns, pattern) {
 		return false, fmt.Errorf("unsupported pattern: %q", pattern)
 	}
 
@@ -50,10 +60,12 @@ func matchLine(line []byte, pattern string) (bool, error) {
 	fmt.Fprintln(os.Stderr, "Logs from your program will appear here!")
 
 	if pattern == `\d` {
-		ok = bytes.ContainsAny(line, "1234567890")
-	} else {
-		ok = bytes.ContainsAny(line, pattern)
+		pattern = "1234567890"
 	}
+	if pattern == `\w` {
+		pattern = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_"
+	}
+	ok = bytes.ContainsAny(line, pattern)
 
 	return ok, nil
 }
