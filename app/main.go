@@ -64,10 +64,6 @@ func matchLine(line []byte, pattern string) (bool, error) {
 		return false, nil
 	}
 
-	fmt.Println(string(line))
-	fmt.Println(pattern)
-	fmt.Println("--------------")
-
 	var singleCharacterPattern string
 	if strings.HasPrefix(pattern, `\d`) {
 		singleCharacterPattern = `\d`
