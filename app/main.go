@@ -9,9 +9,6 @@ import (
 	"unicode/utf8"
 )
 
-// Ensures gofmt doesn't remove the "bytes" import above (feel free to remove this!)
-var _ = bytes.ContainsAny
-
 // Usage: echo <input_text> | your_program.sh -E <pattern>
 func main() {
 	if len(os.Args) < 3 || os.Args[1] != "-E" {
@@ -49,13 +46,13 @@ func contains(slice []string, target string) bool {
 	return false
 }
 
-func isNotContained(line []byte, pattern string) bool {
-	for _, character := range line {
+func negativeMatchIndex(line []byte, pattern string) int {
+	for index, character := range line {
 		if !strings.ContainsRune(pattern, rune(character)) {
-			return true
+			return index
 		}
 	}
-	return false
+	return -1
 }
 
 func matchLine(line []byte, pattern string) (bool, error) {
@@ -67,6 +64,10 @@ func matchLine(line []byte, pattern string) (bool, error) {
 		return false, nil
 	}
 
+	fmt.Println(string(line))
+	fmt.Println(pattern)
+	fmt.Println("--------------")
+
 	var singleCharacterPattern string
 	if strings.HasPrefix(pattern, `\d`) {
 		singleCharacterPattern = `\d`
@@ -77,21 +78,23 @@ func matchLine(line []byte, pattern string) (bool, error) {
 		if groupEndIndex < 0 {
 			return false, fmt.Errorf("unsupported pattern: %q", pattern)
 		}
-		singleCharacterPattern = pattern[0:groupEndIndex]
+		singleCharacterPattern = pattern[0 : groupEndIndex+1]
 	} else {
 		singleCharacterPattern = pattern[0:1]
 	}
 
-	ok, _ := matchSingleCharacter(line, singleCharacterPattern)
-	if ok {
-		return matchLine(line[len(singleCharacterPattern):], pattern[1:])
+	matchIndex, _ := matchSingleCharacter(line, singleCharacterPattern)
+	if matchIndex >= 0 {
+		return matchLine(line[matchIndex+1:], pattern[len(singleCharacterPattern):])
 	} else {
 		return false, nil
 	}
 }
 
-func matchSingleCharacter(line []byte, pattern string) (bool, error) {
-	var ok bool
+func matchSingleCharacter(line []byte, pattern string) (int, error) {
+	fmt.Println(string(line))
+	fmt.Println(pattern)
+	var matchIndex int
 	specialPatterns := []string{`\d`, `\w`}
 
 	isSingleCharacter := utf8.RuneCountInString(pattern) == 1
@@ -100,15 +103,12 @@ func matchSingleCharacter(line []byte, pattern string) (bool, error) {
 	isNegativeCharacterGroup := strings.HasPrefix(pattern, "[^") && strings.HasSuffix(pattern, "]")
 
 	if !(isSingleCharacter || isSpecialPattern || isCharacterGroup) {
-		return false, fmt.Errorf("unsupported pattern: %q", pattern)
+		return -1, fmt.Errorf("unsupported pattern: %q", pattern)
 	}
-
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	fmt.Fprintln(os.Stderr, "Logs from your program will appear here!")
 
 	if isNegativeCharacterGroup {
 		pattern = pattern[2 : len(pattern)-1]
-		ok = isNotContained(line, pattern)
+		matchIndex = negativeMatchIndex(line, pattern)
 	} else {
 		if pattern == `\d` {
 			pattern = "1234567890"
@@ -117,8 +117,8 @@ func matchSingleCharacter(line []byte, pattern string) (bool, error) {
 		} else if isCharacterGroup {
 			pattern = pattern[1 : len(pattern)-1]
 		}
-		ok = bytes.ContainsAny(line, pattern)
+		matchIndex = bytes.IndexAny(line, pattern)
 	}
 
-	return ok, nil
+	return matchIndex, nil
 }
