@@ -70,16 +70,16 @@ func matchLine(line []byte, pattern string) (bool, error) {
 	var singleCharacterPattern string
 	if strings.HasPrefix(pattern, `\d`) {
 		singleCharacterPattern = `\d`
-	}
-	if strings.HasPrefix(pattern, `\w`) {
+	} else if strings.HasPrefix(pattern, `\w`) {
 		singleCharacterPattern = `\w`
-	}
-	if strings.HasPrefix(pattern, "[") {
+	} else if strings.HasPrefix(pattern, "[") {
 		groupEndIndex := strings.Index(pattern, "]")
 		if groupEndIndex < 0 {
 			return false, fmt.Errorf("unsupported pattern: %q", pattern)
 		}
 		singleCharacterPattern = pattern[0:groupEndIndex]
+	} else {
+		singleCharacterPattern = pattern[0:1]
 	}
 
 	ok, _ := matchSingleCharacter(line, singleCharacterPattern)
