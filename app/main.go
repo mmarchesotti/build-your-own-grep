@@ -59,6 +59,38 @@ func isNotContained(line []byte, pattern string) bool {
 }
 
 func matchLine(line []byte, pattern string) (bool, error) {
+	if utf8.RuneCountInString(pattern) == 0 {
+		return true, nil
+	}
+
+	if len(line) == 0 {
+		return false, nil
+	}
+
+	var singleCharacterPattern string
+	if strings.HasPrefix(pattern, `\d`) {
+		singleCharacterPattern = `\d`
+	}
+	if strings.HasPrefix(pattern, `\w`) {
+		singleCharacterPattern = `\w`
+	}
+	if strings.HasPrefix(pattern, "[") {
+		groupEndIndex := strings.Index(pattern, "]")
+		if groupEndIndex < 0 {
+			return false, fmt.Errorf("unsupported pattern: %q", pattern)
+		}
+		singleCharacterPattern = pattern[0:groupEndIndex]
+	}
+
+	ok, _ := matchSingleCharacter(line, singleCharacterPattern)
+	if ok {
+		return matchLine(line[len(singleCharacterPattern):], pattern[1:])
+	} else {
+		return false, nil
+	}
+}
+
+func matchSingleCharacter(line []byte, pattern string) (bool, error) {
 	var ok bool
 	specialPatterns := []string{`\d`, `\w`}
 
