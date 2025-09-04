@@ -55,6 +55,27 @@ func negativeMatchIndex(line []byte, pattern string) int {
 	return -1
 }
 
+var specialPatterns []string = []string{`\d`, `\w`}
+
+func getSpecialPatternCharacterSet(specialPattern string) string {
+	switch specialPattern {
+	case `\d`:
+		return "1234567890"
+	case `\w`:
+		return "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_"
+	}
+	return ""
+}
+
+func getStartingSpecialCharacter(pattern string) (bool, string) {
+	for _, specialPattern := range specialPatterns {
+		if strings.HasPrefix(pattern, specialPattern) {
+			return true, specialPattern
+		}
+	}
+	return false, ""
+}
+
 func matchLine(line []byte, pattern string) (bool, error) {
 	if utf8.RuneCountInString(pattern) == 0 {
 		return true, nil
@@ -65,10 +86,10 @@ func matchLine(line []byte, pattern string) (bool, error) {
 	}
 
 	var singleCharacterPattern string
-	if strings.HasPrefix(pattern, `\d`) {
-		singleCharacterPattern = `\d`
-	} else if strings.HasPrefix(pattern, `\w`) {
-		singleCharacterPattern = `\w`
+	startsWithSpecialCharacter, startingSpecialCharacter := getStartingSpecialCharacter(pattern)
+
+	if startsWithSpecialCharacter {
+		singleCharacterPattern = startingSpecialCharacter
 	} else if strings.HasPrefix(pattern, "[") {
 		groupEndIndex := strings.Index(pattern, "]")
 		if groupEndIndex < 0 {
@@ -88,32 +109,26 @@ func matchLine(line []byte, pattern string) (bool, error) {
 }
 
 func matchSingleCharacter(line []byte, pattern string) (int, error) {
-	fmt.Println(string(line))
-	fmt.Println(pattern)
-	var matchIndex int
-	specialPatterns := []string{`\d`, `\w`}
 
-	isSingleCharacter := utf8.RuneCountInString(pattern) == 1
+	var matchIndex int
+	var characterSet string
+
 	isSpecialPattern := contains(specialPatterns, pattern)
 	isCharacterGroup := strings.HasPrefix(pattern, "[") && strings.HasSuffix(pattern, "]")
 	isNegativeCharacterGroup := strings.HasPrefix(pattern, "[^") && strings.HasSuffix(pattern, "]")
 
-	if !(isSingleCharacter || isSpecialPattern || isCharacterGroup) {
-		return -1, fmt.Errorf("unsupported pattern: %q", pattern)
-	}
-
 	if isNegativeCharacterGroup {
-		pattern = pattern[2 : len(pattern)-1]
-		matchIndex = negativeMatchIndex(line, pattern)
+		characterSet = pattern[2 : len(pattern)-1]
+		matchIndex = negativeMatchIndex(line, characterSet)
 	} else {
-		if pattern == `\d` {
-			pattern = "1234567890"
-		} else if pattern == `\w` {
-			pattern = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_"
+		if isSpecialPattern {
+			characterSet = getSpecialPatternCharacterSet(pattern)
 		} else if isCharacterGroup {
-			pattern = pattern[1 : len(pattern)-1]
+			characterSet = pattern[1 : len(pattern)-1]
+		} else {
+			characterSet = pattern
 		}
-		matchIndex = bytes.IndexAny(line, pattern)
+		matchIndex = bytes.IndexAny(line, characterSet)
 	}
 
 	return matchIndex, nil
