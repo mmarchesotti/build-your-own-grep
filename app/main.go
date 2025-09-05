@@ -87,6 +87,7 @@ func matchAtCurrentPoint(line []byte, pattern string) bool {
 	if utf8.RuneCountInString(pattern) == 0 {
 		return true
 	}
+	hasEndOfStringAchor := strings.HasPrefix(pattern, "$")
 	if hasEndOfStringAchor {
 		return len(line) == 0
 	}
