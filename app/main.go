@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -18,22 +17,21 @@ func main() {
 
 	pattern := os.Args[2]
 
-	line, err := io.ReadAll(os.Stdin) // assume we're only dealing with a single line
+	line, err := io.ReadAll(os.Stdin) // assume we're only dealing with a singular line
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: read input text: %v\n", err)
+		fmt.Println("Program returned 2")
 		os.Exit(2)
 	}
 
-	ok, err := matchLine(line, pattern)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(2)
-	}
+	ok := matchAtBeginning(line, pattern)
 
 	if !ok {
+		fmt.Println("Program returned 1")
 		os.Exit(1)
 	}
 
+	fmt.Println("Program returned 0")
 	// default exit code is 0 which means success
 }
 
@@ -44,15 +42,6 @@ func contains(slice []string, target string) bool {
 		}
 	}
 	return false
-}
-
-func negativeMatchIndex(line []byte, pattern string) int {
-	for index, character := range line {
-		if !strings.ContainsRune(pattern, rune(character)) {
-			return index
-		}
-	}
-	return -1
 }
 
 var specialPatterns []string = []string{`\d`, `\w`}
@@ -76,41 +65,56 @@ func getStartingSpecialCharacter(pattern string) (bool, string) {
 	return false, ""
 }
 
-func matchLine(line []byte, pattern string) (bool, error) {
+func matchAtBeginning(line []byte, pattern string) bool {	
+	hasStartOfStringAnchor := strings.HasPrefix(pattern, "^")
+	if (hasStartOfStringAnchor) {
+		pattern = pattern[1:]
+	}
+
+	for true {
+		if (matchAtCurrentPoint(line, pattern)) {
+			return true
+		}
+		line = line[1:]
+		if (len(line) == 0 || hasStartOfStringAnchor) {
+			break
+		}
+	}
+	return false
+}
+
+func matchAtCurrentPoint(line []byte, pattern string) bool {
 	if utf8.RuneCountInString(pattern) == 0 {
-		return true, nil
+		return true
 	}
-
 	if len(line) == 0 {
-		return false, nil
+		return false
 	}
 
-	var singleCharacterPattern string
+	var singularPattern string
 	startsWithSpecialCharacter, startingSpecialCharacter := getStartingSpecialCharacter(pattern)
 
 	if startsWithSpecialCharacter {
-		singleCharacterPattern = startingSpecialCharacter
+		singularPattern = startingSpecialCharacter
 	} else if strings.HasPrefix(pattern, "[") {
 		groupEndIndex := strings.Index(pattern, "]")
 		if groupEndIndex < 0 {
-			return false, fmt.Errorf("unsupported pattern: %q", pattern)
+			return false
 		}
-		singleCharacterPattern = pattern[0 : groupEndIndex+1]
+		singularPattern = pattern[0 : groupEndIndex+1]
 	} else {
-		singleCharacterPattern = pattern[0:1]
+		singularPattern = pattern[0:1]
+	}
+	isMatch := matchSingularPattern(line, singularPattern)
+	if isMatch {
+		return matchAtCurrentPoint(line[1:], pattern[len(singularPattern):])
+	} else {
+		return false
 	}
 
-	matchIndex, _ := matchSingleCharacter(line, singleCharacterPattern)
-	if matchIndex >= 0 {
-		return matchLine(line[matchIndex+1:], pattern[len(singleCharacterPattern):])
-	} else {
-		return false, nil
-	}
 }
 
-func matchSingleCharacter(line []byte, pattern string) (int, error) {
-
-	var matchIndex int
+func matchSingularPattern(line []byte, pattern string) bool {
 	var characterSet string
 
 	isSpecialPattern := contains(specialPatterns, pattern)
@@ -119,17 +123,19 @@ func matchSingleCharacter(line []byte, pattern string) (int, error) {
 
 	if isNegativeCharacterGroup {
 		characterSet = pattern[2 : len(pattern)-1]
-		matchIndex = negativeMatchIndex(line, characterSet)
+	} else if isCharacterGroup {
+		characterSet = pattern[1 : len(pattern)-1]
+	} else if isSpecialPattern {
+		characterSet = getSpecialPatternCharacterSet(pattern)
 	} else {
-		if isSpecialPattern {
-			characterSet = getSpecialPatternCharacterSet(pattern)
-		} else if isCharacterGroup {
-			characterSet = pattern[1 : len(pattern)-1]
-		} else {
-			characterSet = pattern
-		}
-		matchIndex = bytes.IndexAny(line, characterSet)
+		characterSet = pattern[0:1]
 	}
 
-	return matchIndex, nil
+	isMatch := strings.ContainsRune(characterSet, rune(line[0]))
+	fmt.Println(characterSet, string(line[0]), isMatch)
+	if isNegativeCharacterGroup {
+		return !isMatch
+	} else {
+		return isMatch
+	}
 }
