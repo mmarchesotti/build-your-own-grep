@@ -87,6 +87,9 @@ func matchAtCurrentPoint(line []byte, pattern string) bool {
 	if utf8.RuneCountInString(pattern) == 0 {
 		return true
 	}
+	if hasEndOfStringAchor {
+		return len(line) == 0
+	}
 	if len(line) == 0 {
 		return false
 	}
