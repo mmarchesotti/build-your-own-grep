@@ -65,18 +65,18 @@ func getStartingSpecialCharacter(pattern string) (bool, string) {
 	return false, ""
 }
 
-func matchAtBeginning(line []byte, pattern string) bool {	
+func matchAtBeginning(line []byte, pattern string) bool {
 	hasStartOfStringAnchor := strings.HasPrefix(pattern, "^")
-	if (hasStartOfStringAnchor) {
+	if hasStartOfStringAnchor {
 		pattern = pattern[1:]
 	}
 
-	for true {
-		if (matchAtCurrentPoint(line, pattern)) {
+	for {
+		if matchAtCurrentPoint(line, pattern) {
 			return true
 		}
 		line = line[1:]
-		if (len(line) == 0 || hasStartOfStringAnchor) {
+		if len(line) == 0 || hasStartOfStringAnchor {
 			break
 		}
 	}
