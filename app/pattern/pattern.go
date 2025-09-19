@@ -1,9 +1,9 @@
 package pattern
 
 import (
-	"bytes"
-	"slices"
+	"unicode/utf8"
 
+	"github.com/codecrafters-io/grep-starter-go/app/engine"
 	"github.com/codecrafters-io/grep-starter-go/app/utils"
 )
 
@@ -21,138 +21,105 @@ const (
 	END_ANCHOR     PatternType = "END_ANCHOR"
 )
 
+type basePattern struct {
+	pType PatternType
+}
+
+func (pattern *basePattern) Type() string {
+	return string(pattern.pType)
+}
+
 type Pattern interface {
-	Type() PatternType
-	Match([]byte) ([]byte, bool)
+	Type() string
+	// Returns (bytesConsumed, didMatch)
+	Match(ctx *engine.MatchContext) (int, bool)
 }
 
-/* Literal Pattern */
 type Literal struct {
-	Literal string
+	basePattern
+	Literal rune
 }
 
-func (p *Literal) Type() PatternType {
-	return LITERAL
-}
-
-func (p *Literal) Match(r []byte) ([]byte, bool) {
-	i := bytes.Index(r, []byte(p.Literal))
-	if i == -1 {
-		return r, false
-	}
-	return r[i:], true
+func (pattern *Literal) Match(ctx *engine.MatchContext) (int, bool) {
+	return utf8.RuneLen(pattern.Literal),
+		utils.StartsWithRune(ctx.RemainingLine(), pattern.Literal)
 }
 
 /* Digit Pattern */
-type Digit struct{}
-
-func (p *Digit) Type() PatternType {
-	return DIGIT
+type Digit struct {
+	basePattern
 }
 
-func (p *Digit) Match(r []byte) ([]byte, bool) {
-	for i := range r {
-		if utils.IsDigit(rune(r[i])) {
-			return r[i+1:], true
-		}
+func (pattern *Digit) Match(ctx *engine.MatchContext) (int, bool) {
+	r, runeLen := ctx.FirstRune()
+	if utils.IsDigit(r) {
+		return runeLen, true
+	} else {
+		return 0, false
 	}
-	return r, false
 }
 
 /* Alphanumeric */
-type AlphaNumeric struct{}
-
-func (p *AlphaNumeric) Type() PatternType {
-	return ALPHANUMERIC
+type AlphaNumeric struct {
+	basePattern
 }
 
-func (p *AlphaNumeric) Match(r []byte) ([]byte, bool) {
-	for i := range r {
-		if utils.IsAlphaNumeric(rune(r[i])) {
-			return r[i+1:], true
-		}
+func (pattern *AlphaNumeric) Match(ctx *engine.MatchContext) (int, bool) {
+	r, runeLen := ctx.FirstRune()
+	if utils.IsAlphaNumeric(r) {
+		return runeLen, true
+	} else {
+		return 0, false
 	}
-	return r, false
 }
 
-/* Positive Group */
+/* Positive Groupattern */
 type PositiveGroup struct {
+	basePattern
 	Patterns []Pattern
 }
 
-func (p *PositiveGroup) Type() PatternType {
-	return POSITIVE_GROUP
-}
-
-func (p *PositiveGroup) Match(r []byte) ([]byte, bool) {
-	for i := range r {
-		if slices.Contains(p.Matches, r[i]) {
-			return r[i+1:], true
+func (pattern *PositiveGroup) Match(ctx *engine.MatchContext) (int, bool) {
+	for _, pattern := range pattern.Patterns {
+		bytesConsumed, didMatch := pattern.Match(ctx)
+		if didMatch {
+			return bytesConsumed, true
 		}
 	}
-	return r, false
+	return 0, false
 }
 
-/* Negative group */
+/* Negative groupattern */
 type NegativeGroup struct {
-	Matches []byte
+	basePattern
+	Patterns []Pattern
 }
 
-func (p *NegativeGroup) Type() PatternType {
-	return NEGATIVE_GROUP
-}
-
-func (p *NegativeGroup) Match(r []byte) ([]byte, bool) {
-	for i := range r {
-		if !slices.Contains(p.Matches, r[i]) {
-			return r[i+1:], true
+func (pattern *NegativeGroup) Match(ctx *engine.MatchContext) (int, bool) {
+	for _, pattern := range pattern.Patterns {
+		_, didMatch := pattern.Match(ctx)
+		if didMatch {
+			return 0, false
 		}
 	}
-	return r, false
+	_, firstRuneLen := ctx.FirstRune()
+	return firstRuneLen, true
 }
 
 /* StartAnchor */
 type StartAnchor struct {
-	Matches []byte
+	basePattern
 }
 
-func (p *StartAnchor) Type() PatternType {
-	return START_ANCHOR
-}
-
-func (p *StartAnchor) Match(r []byte) ([]byte, bool) {
-	patternLen := len(p.Matches)
-	rLen := len(r)
-
-	if rLen < patternLen {
-		return r, false
-	}
-
-	if bytes.Equal(p.Matches, r[:rLen]) {
-		return r[rLen:], true
-	}
-
-	return r, false
+func (pattern *StartAnchor) Match(ctx *engine.MatchContext) (int, bool) {
+	return 0, ctx.IsAtStart
 }
 
 /* EndAnchor */
-type EndAnchor struct{}
-
-func (p *EndAnchor) Type() PatternType {
-	return END_ANCHOR
+type EndAnchor struct {
+	basePattern
 }
 
-func (p *EndAnchor) Match(r []byte) ([]byte, bool) {
-	patternLen := len(p.Matches)
-	rLen := len(r)
-
-	if rLen < patternLen {
-		return r, false
-	}
-
-	if bytes.Equal(p.Matches, r[rLen-patternLen:]) {
-		return r[rLen:], true
-	}
-
-	return r, false
+func (pattern *EndAnchor) Match(ctx *engine.MatchContext) (int, bool) {
+	return 0, ctx.IsAtEnd
 }
