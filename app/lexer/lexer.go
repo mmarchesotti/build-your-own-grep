@@ -69,9 +69,9 @@ func Parse(inputPattern string) []pattern.Pattern {
 
 			inputIndex += closingIndex + 1
 		case '^':
-			patterns = append(patterns, &pattern.EndAnchor{})
-		case '$':
 			patterns = append(patterns, &pattern.StartAnchor{})
+		case '$':
+			patterns = append(patterns, &pattern.EndAnchor{})
 		default:
 			patterns = append(patterns, &pattern.Literal{
 				Literal: rune(inputPattern[inputIndex]),
