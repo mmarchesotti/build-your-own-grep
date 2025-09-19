@@ -3,7 +3,7 @@ package main
 
 import "testing"
 
-func TestMatchAtBeginning(t *testing.T) {
+func TestMatchLine(t *testing.T) {
 	// This "table" is a slice of structs. Each struct is a complete test case
 	// with a name, inputs, and the expected result.
 	testCases := []struct {
