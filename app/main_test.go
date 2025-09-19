@@ -155,7 +155,7 @@ func TestMatchAtBeginning(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Run the function we're testing
-			actualMatch := matchAtBeginning(tc.line, tc.pattern)
+			actualMatch := matchLine(tc.line, tc.pattern)
 
 			// Compare the actual result with what we expected
 			if actualMatch != tc.expectedMatch {
