@@ -30,7 +30,7 @@ func Parse(inputPattern string) []pattern.Pattern {
 				patterns = append(patterns, &pattern.Literal{Literal: '\\'})
 			}
 		case '[':
-			closingIndex := strings.Index(inputPattern[inputIndex+1:], "]")
+			closingIndex := strings.Index(inputPattern[inputIndex:], "]")
 			if closingIndex == -1 {
 				patterns = append(patterns, &pattern.Literal{Literal: '['})
 				continue
