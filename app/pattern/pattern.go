@@ -123,3 +123,31 @@ type EndAnchor struct {
 func (pattern *EndAnchor) Match(ctx *engine.MatchContext) (int, bool) {
 	return 0, ctx.IsAtEnd
 }
+
+/* OneOrMore */
+type OneOrMore struct {
+	basePattern
+	SubPattern Pattern
+}
+
+func (pattern *OneOrMore) Match(ctx *engine.MatchContext) (int, bool) {
+	bytesConsumed, didMatch := pattern.SubPattern.Match(ctx)
+	if !didMatch {
+		return 0, false
+	}
+
+	totalBytesConsumed := bytesConsumed
+	localCtx := *ctx
+	localCtx.Index += bytesConsumed
+	for {
+		bytesConsumed, didMatch := pattern.SubPattern.Match(&localCtx)
+		if !didMatch {
+			break
+		}
+
+		totalBytesConsumed += bytesConsumed
+		localCtx.Index += bytesConsumed
+	}
+
+	return totalBytesConsumed, true
+}

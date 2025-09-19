@@ -72,6 +72,13 @@ func Parse(inputPattern string) []pattern.Pattern {
 			patterns = append(patterns, &pattern.StartAnchor{})
 		case '$':
 			patterns = append(patterns, &pattern.EndAnchor{})
+		case '+':
+			if len(patterns) > 0 {
+				lastPattern := patterns[len(patterns)-1]
+				patterns = append(patterns, &pattern.OneOrMore{SubPattern: lastPattern})
+			} else {
+				patterns = append(patterns, &pattern.Literal{Literal: '+'})
+			}
 		default:
 			patterns = append(patterns, &pattern.Literal{
 				Literal: rune(inputPattern[inputIndex]),
