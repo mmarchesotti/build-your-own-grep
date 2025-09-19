@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/codecrafters-io/grep-starter-go/app/engine"
-	"github.com/codecrafters-io/grep-starter-go/app/lexer"
+	"github.com/mmarchesotti/build-your-own-grep/app/engine"
+	"github.com/mmarchesotti/build-your-own-grep/app/lexer"
 )
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>

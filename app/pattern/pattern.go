@@ -3,8 +3,8 @@ package pattern
 import (
 	"unicode/utf8"
 
-	"github.com/codecrafters-io/grep-starter-go/app/engine"
-	"github.com/codecrafters-io/grep-starter-go/app/utils"
+	"github.com/mmarchesotti/build-your-own-grep/app/engine"
+	"github.com/mmarchesotti/build-your-own-grep/app/utils"
 )
 
 type PatternType string

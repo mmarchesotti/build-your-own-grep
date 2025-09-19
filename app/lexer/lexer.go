@@ -3,7 +3,7 @@ package lexer
 import (
 	"strings"
 
-	"github.com/codecrafters-io/grep-starter-go/app/pattern"
+	"github.com/mmarchesotti/build-your-own-grep/app/pattern"
 )
 
 func Parse(inputPattern string) []pattern.Pattern {

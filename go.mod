@@ -1,3 +1,3 @@
-module github.com/codecrafters-io/grep-starter-go
+module github.com/mmarchesotti/build-your-own-grep
 
 go 1.24.0
