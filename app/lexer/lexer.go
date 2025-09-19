@@ -75,7 +75,7 @@ func Parse(inputPattern string) []pattern.Pattern {
 		case '+':
 			if len(patterns) > 0 {
 				lastPattern := patterns[len(patterns)-1]
-				patterns = append(patterns, &pattern.OneOrMore{SubPattern: lastPattern})
+				patterns[len(patterns)-1] = &pattern.OneOrMore{SubPattern: lastPattern}
 			} else {
 				patterns = append(patterns, &pattern.Literal{Literal: '+'})
 			}
