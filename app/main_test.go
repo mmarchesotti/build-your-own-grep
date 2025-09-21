@@ -4,10 +4,8 @@ package main
 import "testing"
 
 func TestMatchLine(t *testing.T) {
-	// This "table" is a slice of structs. Each struct is a complete test case
-	// with a name, inputs, and the expected result.
 	testCases := []struct {
-		name          string // A descriptive name for the test case
+		name          string
 		line          []byte
 		pattern       string
 		expectedMatch bool
@@ -148,6 +146,12 @@ func TestMatchLine(t *testing.T) {
 			line:          []byte("caat"),
 			pattern:       `cat+`,
 			expectedMatch: false,
+		},
+		{
+			name:          "Match one or more times: codecrafters #02",
+			line:          []byte("caaats"),
+			pattern:       `ca+at`,
+			expectedMatch: true,
 		},
 	}
 
