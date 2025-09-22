@@ -3,58 +3,58 @@ package lexer
 import (
 	"strings"
 
-	"github.com/mmarchesotti/build-your-own-grep/app/pattern"
+	"github.com/mmarchesotti/build-your-own-grep/app/token"
 )
 
-func Parse(inputPattern string) []pattern.Pattern {
-	var patterns []pattern.Pattern
+func Parse(inputToken string) []token.Token {
+	var tokens []token.Token
 
-	for inputIndex := 0; inputIndex < len(inputPattern); inputIndex++ {
-		currentCharacter := inputPattern[inputIndex]
+	for inputIndex := 0; inputIndex < len(inputToken); inputIndex++ {
+		currentCharacter := inputToken[inputIndex]
 
 		switch currentCharacter {
 		case '\\':
-			if inputIndex+1 < len(inputPattern) {
-				nextCharacter := inputPattern[inputIndex+1]
+			if inputIndex+1 < len(inputToken) {
+				nextCharacter := inputToken[inputIndex+1]
 				switch nextCharacter {
 				case 'd':
-					patterns = append(patterns, &pattern.Digit{})
+					tokens = append(tokens, &token.Digit{})
 					inputIndex += 1
 				case 'w':
-					patterns = append(patterns, &pattern.AlphaNumeric{})
+					tokens = append(tokens, &token.AlphaNumeric{})
 					inputIndex += 1
 				default:
-					patterns = append(patterns, &pattern.Literal{Literal: '\\'})
+					tokens = append(tokens, &token.Literal{Literal: '\\'})
 				}
 			} else {
-				patterns = append(patterns, &pattern.Literal{Literal: '\\'})
+				tokens = append(tokens, &token.Literal{Literal: '\\'})
 			}
 		case '[':
-			closingIndex := strings.Index(inputPattern[inputIndex:], "]")
+			closingIndex := strings.Index(inputToken[inputIndex:], "]")
 			if closingIndex == -1 {
-				patterns = append(patterns, &pattern.Literal{Literal: '['})
+				tokens = append(tokens, &token.Literal{Literal: '['})
 				continue
 			}
 
-			var groupPatterns []pattern.Pattern
-			groupCharacters := inputPattern[inputIndex+1 : closingIndex]
+			var groupTokens []token.Token
+			groupCharacters := inputToken[inputIndex+1 : closingIndex]
 			for groupIndex := 0; groupIndex < len(groupCharacters); groupIndex++ {
 				currentGroupCharacter := groupCharacters[groupIndex]
 
-				if currentGroupCharacter == '\\' && groupIndex+1 < len(inputPattern) {
-					nextCharacter := inputPattern[inputIndex+1]
+				if currentGroupCharacter == '\\' && groupIndex+1 < len(inputToken) {
+					nextCharacter := inputToken[inputIndex+1]
 					switch nextCharacter {
 					case 'd':
-						groupPatterns = append(groupPatterns, &pattern.Digit{})
+						groupTokens = append(groupTokens, &token.Digit{})
 						groupIndex += 1
 					case 'w':
-						groupPatterns = append(groupPatterns, &pattern.AlphaNumeric{})
+						groupTokens = append(groupTokens, &token.AlphaNumeric{})
 						groupIndex += 1
 					default:
-						groupPatterns = append(groupPatterns, &pattern.Literal{Literal: '\\'})
+						groupTokens = append(groupTokens, &token.Literal{Literal: '\\'})
 					}
 				} else {
-					groupPatterns = append(groupPatterns, &pattern.Literal{
+					groupTokens = append(groupTokens, &token.Literal{
 						Literal: rune(groupCharacters[groupIndex]),
 					})
 				}
@@ -62,29 +62,29 @@ func Parse(inputPattern string) []pattern.Pattern {
 
 			groupFirstCharacter := groupCharacters[0]
 			if groupFirstCharacter == '^' {
-				patterns = append(patterns, &pattern.NegativeGroup{Patterns: groupPatterns[1:]})
+				tokens = append(tokens, &token.NegativeGroup{Tokens: groupTokens[1:]})
 			} else {
-				patterns = append(patterns, &pattern.PositiveGroup{Patterns: groupPatterns})
+				tokens = append(tokens, &token.PositiveGroup{Tokens: groupTokens})
 			}
 
 			inputIndex += closingIndex + 1
 		case '^':
-			patterns = append(patterns, &pattern.StartAnchor{})
+			tokens = append(tokens, &token.StartAnchor{})
 		case '$':
-			patterns = append(patterns, &pattern.EndAnchor{})
+			tokens = append(tokens, &token.EndAnchor{})
 		case '+':
-			if len(patterns) > 0 {
-				lastPattern := patterns[len(patterns)-1]
-				patterns[len(patterns)-1] = &pattern.OneOrMore{SubPattern: lastPattern}
+			if len(tokens) > 0 {
+				lastToken := tokens[len(tokens)-1]
+				tokens[len(tokens)-1] = &token.PositiveClosure{SubToken: lastToken}
 			} else {
-				patterns = append(patterns, &pattern.Literal{Literal: '+'})
+				tokens = append(tokens, &token.Literal{Literal: '+'})
 			}
 		default:
-			patterns = append(patterns, &pattern.Literal{
-				Literal: rune(inputPattern[inputIndex]),
+			tokens = append(tokens, &token.Literal{
+				Literal: rune(inputToken[inputIndex]),
 			})
 		}
 	}
 
-	return patterns
+	return tokens
 }
