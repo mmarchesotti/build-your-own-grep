@@ -88,6 +88,10 @@ func Tokenize(inputPattern string) []token.Token {
 			newToken = &token.Wildcard{}
 		case '|':
 			newToken = &token.Alternation{}
+		case '(':
+			newToken = &token.GroupingOpener{}
+		case ')':
+			newToken = &token.GroupingCloser{}
 		default:
 			newToken = &token.Literal{
 				Literal: rune(inputPattern[inputIndex]),

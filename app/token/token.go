@@ -16,6 +16,8 @@ const (
 	WILDCARD            TokenType = "WILDCARD"
 	ALTERNATION         TokenType = "ALTERNATION"
 	CONCATENATION       TokenType = "CONCATENATION"
+	GROUPING_OPENER     TokenType = "GROUPING_OPENER"
+	GROUPING_CLOSER     TokenType = "GROUPING_CLOSER"
 )
 
 type PredefinedClass int
@@ -107,3 +109,5 @@ type CharacterSet struct {
 type StartAnchor struct{ baseToken }
 type EndAnchor struct{ baseToken }
 type Wildcard struct{ baseToken }
+type GroupingOpener struct{ baseToken }
+type GroupingCloser struct{ baseToken }
