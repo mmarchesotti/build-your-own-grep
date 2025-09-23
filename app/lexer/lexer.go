@@ -6,84 +6,94 @@ import (
 	"github.com/mmarchesotti/build-your-own-grep/app/token"
 )
 
-func Parse(inputToken string) []token.Token {
-	var tokens []token.Token
+func Tokenize(inputPattern string) []token.Token {
+	tokens := make([]token.Token, 0, len(inputPattern))
 
-	for inputIndex := 0; inputIndex < len(inputToken); inputIndex++ {
-		currentCharacter := inputToken[inputIndex]
+	for inputIndex := 0; inputIndex < len(inputPattern); inputIndex++ {
+		currentCharacter := inputPattern[inputIndex]
+		var newToken token.Token
 
 		switch currentCharacter {
 		case '\\':
-			if inputIndex+1 < len(inputToken) {
-				nextCharacter := inputToken[inputIndex+1]
-				switch nextCharacter {
-				case 'd':
-					tokens = append(tokens, &token.Digit{})
-					inputIndex += 1
-				case 'w':
-					tokens = append(tokens, &token.AlphaNumeric{})
-					inputIndex += 1
-				default:
-					tokens = append(tokens, &token.Literal{Literal: '\\'})
-				}
-			} else {
-				tokens = append(tokens, &token.Literal{Literal: '\\'})
+			if inputIndex+1 >= len(inputPattern) {
+				// TODO ERROR DANGLING BACKSLASH
 			}
+			nextCharacter := inputPattern[inputIndex+1]
+			switch nextCharacter {
+			case 'd':
+				newToken = &token.Digit{}
+			case 'w':
+				newToken = &token.AlphaNumeric{}
+			default:
+				newToken = &token.Literal{Literal: rune(nextCharacter)}
+			}
+			inputIndex += 1
 		case '[':
-			closingIndex := strings.Index(inputToken[inputIndex:], "]")
-			if closingIndex == -1 {
-				tokens = append(tokens, &token.Literal{Literal: '['})
+			distanceToClosing := strings.Index(inputPattern[inputIndex:], "]")
+			if distanceToClosing == -1 {
+				// TODO ERROR UNMATCHED [
 				continue
 			}
 
-			var groupTokens []token.Token
-			groupCharacters := inputToken[inputIndex+1 : closingIndex]
-			for groupIndex := 0; groupIndex < len(groupCharacters); groupIndex++ {
-				currentGroupCharacter := groupCharacters[groupIndex]
+			var setLiterals []rune
+			var characterClasses []token.PredefinedClass
+			setCharacters := inputPattern[inputIndex+1 : inputIndex+distanceToClosing]
+			inputIndex += distanceToClosing
 
-				if currentGroupCharacter == '\\' && groupIndex+1 < len(inputToken) {
-					nextCharacter := inputToken[inputIndex+1]
+			startingSetIndex := 0
+			isNegated := distanceToClosing > 1 && setCharacters[0] == '^'
+			if isNegated {
+				startingSetIndex = 1
+			}
+
+			for setIndex := startingSetIndex; setIndex < len(setCharacters); setIndex++ {
+				currentGroupCharacter := setCharacters[setIndex]
+
+				if currentGroupCharacter == '\\' {
+					if setIndex+1 >= len(setCharacters) {
+						// TODO ERROR DANGLING BLACKSLASH
+					}
+					nextCharacter := setCharacters[setIndex+1]
 					switch nextCharacter {
 					case 'd':
-						groupTokens = append(groupTokens, &token.Digit{})
-						groupIndex += 1
+						characterClasses = append(characterClasses, token.ClassDigit)
 					case 'w':
-						groupTokens = append(groupTokens, &token.AlphaNumeric{})
-						groupIndex += 1
+						characterClasses = append(characterClasses, token.ClassAlphanumeric)
 					default:
-						groupTokens = append(groupTokens, &token.Literal{Literal: '\\'})
+						setLiterals = append(setLiterals, rune(nextCharacter))
 					}
+					setIndex += 1
 				} else {
-					groupTokens = append(groupTokens, &token.Literal{
-						Literal: rune(groupCharacters[groupIndex]),
-					})
+					setLiterals = append(setLiterals, rune(setCharacters[setIndex]))
 				}
 			}
 
-			groupFirstCharacter := groupCharacters[0]
-			if groupFirstCharacter == '^' {
-				tokens = append(tokens, &token.NegativeGroup{Tokens: groupTokens[1:]})
-			} else {
-				tokens = append(tokens, &token.PositiveGroup{Tokens: groupTokens})
+			newToken = &token.CharacterSet{
+				Negated:          isNegated,
+				CharacterClasses: characterClasses,
+				Literals:         setLiterals,
 			}
 
-			inputIndex += closingIndex + 1
 		case '^':
-			tokens = append(tokens, &token.StartAnchor{})
+			newToken = &token.StartAnchor{}
 		case '$':
-			tokens = append(tokens, &token.EndAnchor{})
+			newToken = &token.EndAnchor{}
+		case '*':
+			newToken = &token.KleeneClosure{}
 		case '+':
-			if len(tokens) > 0 {
-				lastToken := tokens[len(tokens)-1]
-				tokens[len(tokens)-1] = &token.PositiveClosure{SubToken: lastToken}
-			} else {
-				tokens = append(tokens, &token.Literal{Literal: '+'})
-			}
+			newToken = &token.PositiveClosure{}
+		case '?':
+			newToken = &token.OptionalQuantifier{}
+		case '.':
+			newToken = &token.Wildcard{}
+		case '|':
+			newToken = &token.Alternation{}
 		default:
-			tokens = append(tokens, &token.Literal{
-				Literal: rune(inputToken[inputIndex]),
-			})
+			newToken = &token.Literal{
+				Literal: rune(inputPattern[inputIndex]),
+			}
 		}
+		tokens = append(tokens, newToken)
 	}
 
 	return tokens

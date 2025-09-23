@@ -37,7 +37,7 @@ func main() {
 }
 
 func matchLine(line []byte, inputPattern string) bool {
-	patterns := lexer.Parse(inputPattern)
+	patterns := lexer.Tokenize(inputPattern)
 
 	for startingIndex := 0; startingIndex < len(line); startingIndex++ {
 		currentIndex := startingIndex
