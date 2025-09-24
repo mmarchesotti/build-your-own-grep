@@ -1,5 +1,7 @@
 package token
 
+import "github.com/mmarchesotti/build-your-own-grep/app/predefinedclass"
+
 type TokenType string
 
 const (
@@ -20,54 +22,48 @@ const (
 	GROUPING_CLOSER     TokenType = "GROUPING_CLOSER"
 )
 
-type PredefinedClass int
-
-const (
-	ClassDigit PredefinedClass = iota
-	ClassAlphanumeric
-	ClassWhitespace
-)
-
 // --- Helper Functions ---
 
-func IsOperator(t Token) bool {
-	switch t.(type) {
-	case *KleeneClosure, *PositiveClosure, *OptionalQuantifier, *Alternation, *Concatenation:
-		return true
-	default:
-		return false
-	}
+func IsAlternation(t Token) bool {
+	_, ok := t.(*Alternation)
+	return ok
+}
+
+func IsGroupingOpener(t Token) bool {
+	_, ok := t.(*GroupingOpener)
+	return ok
+}
+
+func IsGroupingCloser(t Token) bool {
+	_, ok := t.(*GroupingCloser)
+	return ok
 }
 
 func IsStarter(t Token) bool {
 	switch t.(type) {
-	case *Literal, *CharacterSet, *Wildcard, *Digit, *AlphaNumeric, *StartAnchor:
+	case *Literal, *CharacterSet, *Wildcard, *Digit, *AlphaNumeric,
+		*StartAnchor, *GroupingOpener:
 		return true
 	default:
 		return false
 	}
 }
 
-func IsEnder(t Token) bool {
+func IsUnaryOperator(t Token) bool {
 	switch t.(type) {
-	case *Literal, *CharacterSet, *Wildcard, *Digit, *AlphaNumeric, *EndAnchor,
-		*KleeneClosure, *PositiveClosure, *OptionalQuantifier:
+	case *OptionalQuantifier, *KleeneClosure, *PositiveClosure:
 		return true
 	default:
 		return false
 	}
 }
 
-func Precedence(t Token) int {
+func IsAtom(t Token) bool {
 	switch t.(type) {
-	case *KleeneClosure, *PositiveClosure, *OptionalQuantifier:
-		return 3
-	case *Concatenation:
-		return 2
-	case *Alternation:
-		return 1
+	case *Literal, *CharacterSet, *Wildcard, *Digit, *AlphaNumeric:
+		return true
 	default:
-		return 0
+		return false
 	}
 }
 
@@ -104,7 +100,7 @@ type CharacterSet struct {
 	Negated          bool
 	Literals         []rune
 	Ranges           [][2]rune
-	CharacterClasses []PredefinedClass
+	CharacterClasses []predefinedclass.PredefinedClass
 }
 type StartAnchor struct{ baseToken }
 type EndAnchor struct{ baseToken }

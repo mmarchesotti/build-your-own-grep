@@ -3,6 +3,7 @@ package lexer
 import (
 	"strings"
 
+	"github.com/mmarchesotti/build-your-own-grep/app/predefinedclass"
 	"github.com/mmarchesotti/build-your-own-grep/app/token"
 )
 
@@ -36,7 +37,7 @@ func Tokenize(inputPattern string) []token.Token {
 			}
 
 			var setLiterals []rune
-			var characterClasses []token.PredefinedClass
+			var characterClasses []predefinedclass.PredefinedClass
 			setCharacters := inputPattern[inputIndex+1 : inputIndex+distanceToClosing]
 			inputIndex += distanceToClosing
 
@@ -56,9 +57,9 @@ func Tokenize(inputPattern string) []token.Token {
 					nextCharacter := setCharacters[setIndex+1]
 					switch nextCharacter {
 					case 'd':
-						characterClasses = append(characterClasses, token.ClassDigit)
+						characterClasses = append(characterClasses, predefinedclass.ClassDigit)
 					case 'w':
-						characterClasses = append(characterClasses, token.ClassAlphanumeric)
+						characterClasses = append(characterClasses, predefinedclass.ClassAlphanumeric)
 					default:
 						setLiterals = append(setLiterals, rune(nextCharacter))
 					}

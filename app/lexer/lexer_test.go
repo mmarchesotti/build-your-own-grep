@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/mmarchesotti/build-your-own-grep/app/predefinedclass"
 	"github.com/mmarchesotti/build-your-own-grep/app/token"
 )
 
@@ -74,9 +75,11 @@ func TestTokenize(t *testing.T) {
 			input: `[a\d]`,
 			expected: []token.Token{
 				&token.CharacterSet{
-					Negated:          false,
-					Literals:         []rune{'a'},
-					CharacterClasses: []token.PredefinedClass{token.ClassDigit},
+					Negated:  false,
+					Literals: []rune{'a'},
+					CharacterClasses: []predefinedclass.PredefinedClass{
+						predefinedclass.ClassDigit,
+					},
 				},
 			},
 		},
