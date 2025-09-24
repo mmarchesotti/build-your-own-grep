@@ -4,72 +4,93 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/mmarchesotti/build-your-own-grep/app/token"
+	"github.com/mmarchesotti/build-your-own-grep/app/ast"
 )
 
-// Helper to make test definitions cleaner
-func l(char rune) *token.Literal          { return &token.Literal{Literal: char} }
-func alt() *token.Alternation             { return &token.Alternation{} }
-func concat() *token.Concatenation        { return &token.Concatenation{} }
-func kleene() *token.KleeneClosure        { return &token.KleeneClosure{} }
-func pos() *token.PositiveClosure         { return &token.PositiveClosure{} }
-func opt() *token.OptionalQuantifier      { return &token.OptionalQuantifier{} }
-func cs(lits ...rune) *token.CharacterSet { return &token.CharacterSet{Literals: lits} }
+// --- Test Helper Functions ---
+// These make the test cases much cleaner and easier to read.
+func lit(char rune) ast.ASTNode { return &ast.LiteralNode{Literal: char} }
+func alt(left, right ast.ASTNode) ast.ASTNode {
+	return &ast.AlternationNode{Left: left, Right: right}
+}
+func concat(left, right ast.ASTNode) ast.ASTNode {
+	return &ast.ConcatenationNode{Left: left, Right: right}
+}
+func star(child ast.ASTNode) ast.ASTNode { return &ast.KleeneClosureNode{Child: child} }
+func plus(child ast.ASTNode) ast.ASTNode { return &ast.PositiveClosureNode{Child: child} }
+func opt(child ast.ASTNode) ast.ASTNode  { return &ast.OptionalNode{Child: child} }
+func cs(neg bool, lits []rune) ast.ASTNode {
+	return &ast.CharacterSetNode{Negated: neg, Literals: lits}
+}
+
+// --- Main Test Function ---
 
 func TestParse(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected []token.Token
+		expected ast.ASTNode
 	}{
 		{
-			name:  "simple concatenation",
-			input: "ab",
-			expected: []token.Token{
-				l('a'), l('b'), concat(),
-			},
+			name:     "single literal",
+			input:    "a",
+			expected: lit('a'),
 		},
 		{
-			name:  "simple alternation",
-			input: "a|b",
-			expected: []token.Token{
-				l('a'), l('b'), alt(),
-			},
+			name:     "simple concatenation",
+			input:    "ab",
+			expected: concat(lit('a'), lit('b')),
 		},
 		{
-			name:  "alternation and concatenation precedence",
-			input: "ab|c",
-			expected: []token.Token{
-				l('a'), l('b'), concat(), l('c'), alt(),
-			},
+			name:     "long concatenation (will fail until bug is fixed)",
+			input:    "abc",
+			expected: concat(concat(lit('a'), lit('b')), lit('c')),
 		},
 		{
-			name:  "concatenation with quantifiers",
-			input: "a*b",
-			expected: []token.Token{
-				l('a'), kleene(), l('b'), concat(),
-			},
+			name:     "simple alternation",
+			input:    "a|b",
+			expected: alt(lit('a'), lit('b')),
 		},
 		{
-			name:  "complex expression with multiple operators",
-			input: "a*|b+",
-			expected: []token.Token{
-				l('a'), kleene(), l('b'), pos(), alt(),
-			},
+			name:     "alternation and concatenation precedence",
+			input:    "ab|c",
+			expected: alt(concat(lit('a'), lit('b')), lit('c')),
 		},
 		{
-			name:  "character set concatenation",
-			input: "a[bc]",
-			expected: []token.Token{
-				l('a'), cs('b', 'c'), concat(),
-			},
+			name:     "parentheses for scope",
+			input:    "a(b|c)",
+			expected: concat(lit('a'), alt(lit('b'), lit('c'))),
 		},
 		{
-			name:  "quantifier on a character set",
-			input: "[ab]?",
-			expected: []token.Token{
-				cs('a', 'b'), opt(),
-			},
+			name:     "simple kleene star",
+			input:    "a*",
+			expected: star(lit('a')),
+		},
+		{
+			name:     "kleene star on a group",
+			input:    "(ab)*",
+			expected: star(concat(lit('a'), lit('b'))),
+		},
+		{
+			name:     "all quantifiers",
+			input:    "a*b+c?",
+			expected: concat(concat(star(lit('a')), plus(lit('b'))), opt(lit('c'))),
+		},
+		{
+			name:     "character set",
+			input:    "[abc]",
+			expected: cs(false, []rune{'a', 'b', 'c'}),
+		},
+		{
+			name:  "complex expression",
+			input: "a(b|c)*d",
+			expected: concat(
+				concat(
+					lit('a'),
+					star(alt(lit('b'), lit('c'))),
+				),
+				lit('d'),
+			),
 		},
 	}
 
