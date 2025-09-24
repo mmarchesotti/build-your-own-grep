@@ -35,7 +35,7 @@ func (p *Parser) parseExpression() ast.ASTNode {
 	node := p.parseTerm()
 
 	for token.IsAlternation(p.currentToken()) {
-		p.consumeToken()
+		p.consumeToken() // Alternation
 		rightNode := p.parseTerm()
 		node = &ast.AlternationNode{Left: node, Right: rightNode}
 	}
@@ -47,7 +47,6 @@ func (p *Parser) parseTerm() ast.ASTNode {
 	node := p.parseFactor()
 
 	for token.IsStarter(p.currentToken()) {
-		p.consumeToken()
 		rightNode := p.parseFactor()
 		node = &ast.ConcatenationNode{Left: node, Right: rightNode}
 	}
@@ -59,7 +58,7 @@ func (p *Parser) parseFactor() ast.ASTNode {
 	node := p.parseAtom()
 
 	for token.IsUnaryOperator(p.currentToken()) {
-		t := p.consumeToken()
+		t := p.consumeToken() // Operator
 		switch t.(type) {
 		case *token.OptionalQuantifier:
 			node = &ast.OptionalNode{
@@ -82,20 +81,21 @@ func (p *Parser) parseFactor() ast.ASTNode {
 func (p *Parser) parseAtom() ast.ASTNode {
 	switch t := p.currentToken().(type) {
 	case *token.GroupingOpener:
+		p.consumeToken() // Grouping Opener
 		node := p.parseExpression()
 
 		if !token.IsGroupingCloser(p.currentToken()) {
 			// TODO ERROR UNMATCHED GROUP OPENER
 		}
-		p.consumeToken()
+		p.consumeToken() // Grouping Closer
 		return node
 	case *token.Literal:
-		p.consumeToken()
+		p.consumeToken() // Literal
 		return &ast.LiteralNode{
 			Literal: t.Literal,
 		}
 	case *token.CharacterSet:
-		p.consumeToken()
+		p.consumeToken() // Character set
 		return &ast.CharacterSetNode{
 			Negated:          t.Negated,
 			Literals:         t.Literals,
@@ -103,19 +103,19 @@ func (p *Parser) parseAtom() ast.ASTNode {
 			CharacterClasses: t.CharacterClasses,
 		}
 	case *token.Wildcard:
-		p.consumeToken()
+		p.consumeToken() // Wildcard
 		return &ast.WildcardNode{}
 	case *token.Digit:
-		p.consumeToken()
+		p.consumeToken() // Digit
 		return &ast.DigitNode{}
 	case *token.AlphaNumeric:
-		p.consumeToken()
+		p.consumeToken() // AlphaNumeric
 		return &ast.AlphaNumericNode{}
 	case *token.StartAnchor:
-		p.consumeToken()
+		p.consumeToken() // StartAnchor
 		return &ast.StartAnchorNode{}
 	case *token.EndAnchor:
-		p.consumeToken()
+		p.consumeToken() // EndAnchor
 		return &ast.EndAnchorNode{}
 	case *token.GroupingCloser:
 		// TODO ERROR UNMATCHED GROUP CLOSER
