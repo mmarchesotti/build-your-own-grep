@@ -35,7 +35,7 @@ func (p *Parser) parseExpression() ast.ASTNode {
 	node := p.parseTerm()
 
 	for token.IsAlternation(p.currentToken()) {
-		p.consumeToken() // Alternation
+		p.consumeToken()
 		rightNode := p.parseTerm()
 		node = &ast.AlternationNode{Left: node, Right: rightNode}
 	}
@@ -58,7 +58,7 @@ func (p *Parser) parseFactor() ast.ASTNode {
 	node := p.parseAtom()
 
 	for token.IsUnaryOperator(p.currentToken()) {
-		t := p.consumeToken() // Operator
+		t := p.consumeToken()
 		switch t.(type) {
 		case *token.OptionalQuantifier:
 			node = &ast.OptionalNode{
@@ -81,21 +81,21 @@ func (p *Parser) parseFactor() ast.ASTNode {
 func (p *Parser) parseAtom() ast.ASTNode {
 	switch t := p.currentToken().(type) {
 	case *token.GroupingOpener:
-		p.consumeToken() // Grouping Opener
+		p.consumeToken()
 		node := p.parseExpression()
 
 		if !token.IsGroupingCloser(p.currentToken()) {
 			// TODO ERROR UNMATCHED GROUP OPENER
 		}
-		p.consumeToken() // Grouping Closer
+		p.consumeToken()
 		return node
 	case *token.Literal:
-		p.consumeToken() // Literal
+		p.consumeToken()
 		return &ast.LiteralNode{
 			Literal: t.Literal,
 		}
 	case *token.CharacterSet:
-		p.consumeToken() // Character set
+		p.consumeToken()
 		return &ast.CharacterSetNode{
 			Negated:          t.Negated,
 			Literals:         t.Literals,
@@ -103,19 +103,19 @@ func (p *Parser) parseAtom() ast.ASTNode {
 			CharacterClasses: t.CharacterClasses,
 		}
 	case *token.Wildcard:
-		p.consumeToken() // Wildcard
+		p.consumeToken()
 		return &ast.WildcardNode{}
 	case *token.Digit:
-		p.consumeToken() // Digit
+		p.consumeToken()
 		return &ast.DigitNode{}
 	case *token.AlphaNumeric:
-		p.consumeToken() // AlphaNumeric
+		p.consumeToken()
 		return &ast.AlphaNumericNode{}
 	case *token.StartAnchor:
-		p.consumeToken() // StartAnchor
+		p.consumeToken()
 		return &ast.StartAnchorNode{}
 	case *token.EndAnchor:
-		p.consumeToken() // EndAnchor
+		p.consumeToken()
 		return &ast.EndAnchorNode{}
 	case *token.GroupingCloser:
 		// TODO ERROR UNMATCHED GROUP CLOSER
