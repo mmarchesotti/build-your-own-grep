@@ -19,8 +19,8 @@ func concat(left, right ast.ASTNode) ast.ASTNode {
 func star(child ast.ASTNode) ast.ASTNode { return &ast.KleeneClosureNode{Child: child} }
 func plus(child ast.ASTNode) ast.ASTNode { return &ast.PositiveClosureNode{Child: child} }
 func opt(child ast.ASTNode) ast.ASTNode  { return &ast.OptionalNode{Child: child} }
-func cs(neg bool, lits []rune) ast.ASTNode {
-	return &ast.CharacterSetNode{Negated: neg, Literals: lits}
+func cs(pos bool, lits []rune) ast.ASTNode {
+	return &ast.CharacterSetNode{IsPositive: pos, Literals: lits}
 }
 
 // --- Main Test Function ---
@@ -79,7 +79,7 @@ func TestParse(t *testing.T) {
 		{
 			name:     "character set",
 			input:    "[abc]",
-			expected: cs(false, []rune{'a', 'b', 'c'}),
+			expected: cs(true, []rune{'a', 'b', 'c'}),
 		},
 		{
 			name:  "complex expression",

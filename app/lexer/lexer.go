@@ -42,8 +42,8 @@ func Tokenize(inputPattern string) []token.Token {
 			inputIndex += distanceToClosing
 
 			startingSetIndex := 0
-			isNegated := distanceToClosing > 1 && setCharacters[0] == '^'
-			if isNegated {
+			isPositive := distanceToClosing == 0 || setCharacters[0] != '^'
+			if isPositive {
 				startingSetIndex = 1
 			}
 
@@ -70,7 +70,7 @@ func Tokenize(inputPattern string) []token.Token {
 			}
 
 			newToken = &token.CharacterSet{
-				Negated:          isNegated,
+				IsPositive:       isPositive,
 				CharacterClasses: characterClasses,
 				Literals:         setLiterals,
 			}

@@ -65,8 +65,8 @@ func TestTokenize(t *testing.T) {
 			input: "[^abc]",
 			expected: []token.Token{
 				&token.CharacterSet{
-					Negated:  true,
-					Literals: []rune{'a', 'b', 'c'},
+					IsPositive: true,
+					Literals:   []rune{'a', 'b', 'c'},
 				},
 			},
 		},
@@ -75,8 +75,8 @@ func TestTokenize(t *testing.T) {
 			input: `[a\d]`,
 			expected: []token.Token{
 				&token.CharacterSet{
-					Negated:  false,
-					Literals: []rune{'a'},
+					IsPositive: false,
+					Literals:   []rune{'a'},
 					CharacterClasses: []predefinedclass.PredefinedClass{
 						predefinedclass.ClassDigit,
 					},
@@ -88,7 +88,7 @@ func TestTokenize(t *testing.T) {
 			input: `[]`,
 			expected: []token.Token{
 				&token.CharacterSet{
-					Negated: false,
+					IsPositive: false,
 				},
 			},
 		},
@@ -98,8 +98,8 @@ func TestTokenize(t *testing.T) {
 			expected: []token.Token{
 				&token.Literal{Literal: 'a'},
 				&token.CharacterSet{
-					Negated:  false,
-					Literals: []rune{'b', 'c'},
+					IsPositive: false,
+					Literals:   []rune{'b', 'c'},
 				},
 			},
 		},

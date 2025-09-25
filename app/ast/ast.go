@@ -44,7 +44,7 @@ type LiteralNode struct {
 
 type CharacterSetNode struct {
 	baseASTNode
-	Negated          bool
+	IsPositive       bool
 	Literals         []rune
 	Ranges           [][2]rune
 	CharacterClasses []predefinedclass.PredefinedClass

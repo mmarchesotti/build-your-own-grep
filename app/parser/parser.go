@@ -97,7 +97,7 @@ func (p *Parser) parseAtom() ast.ASTNode {
 	case *token.CharacterSet:
 		p.consumeToken()
 		return &ast.CharacterSetNode{
-			Negated:          t.Negated,
+			IsPositive:       t.IsPositive,
 			Literals:         t.Literals,
 			Ranges:           t.Ranges,
 			CharacterClasses: t.CharacterClasses,

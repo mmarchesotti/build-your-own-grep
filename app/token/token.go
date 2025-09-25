@@ -97,7 +97,7 @@ type Digit struct{ baseToken }
 type AlphaNumeric struct{ baseToken }
 type CharacterSet struct {
 	baseToken
-	Negated          bool
+	IsPositive       bool
 	Literals         []rune
 	Ranges           [][2]rune
 	CharacterClasses []predefinedclass.PredefinedClass
