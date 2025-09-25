@@ -70,14 +70,14 @@ func IsAtom(t Token) bool {
 // --- Token Interface and Structs ---
 
 type Token interface {
-	Type() string
+	getType() string
 }
 
 type baseToken struct {
 	pType TokenType
 }
 
-func (token *baseToken) Type() string {
+func (token *baseToken) getType() string {
 	return string(token.pType)
 }
 
