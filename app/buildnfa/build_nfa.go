@@ -15,8 +15,8 @@ func processNode(n ast.ASTNode) frag.Fragment {
 		subfragment2 := processNode(node.Right)
 		return frag.Fragment{
 			Start: &frag.SplitState{
-				Branch1: &subfragment1.Start,
-				Branch2: &subfragment2.Start,
+				Branch1: subfragment1.Start,
+				Branch2: subfragment2.Start,
 			},
 			Out: append(subfragment1.Out, subfragment2.Out...),
 		}
@@ -31,34 +31,34 @@ func processNode(n ast.ASTNode) frag.Fragment {
 	case *ast.KleeneClosureNode:
 		subfragment := processNode(node.Child)
 		split := frag.SplitState{
-			Branch1: &subfragment.Start,
+			Branch1: subfragment.Start,
 			Branch2: nil,
 		}
 		frag.SetStates(subfragment.Out, &split)
 		return frag.Fragment{
 			Start: &split,
-			Out:   []*frag.State{split.Branch2},
+			Out:   []*frag.State{&split.Branch2},
 		}
 	case *ast.PositiveClosureNode:
 		subfragment := processNode(node.Child)
 		split := frag.SplitState{
-			Branch1: &subfragment.Start,
+			Branch1: subfragment.Start,
 			Branch2: nil,
 		}
 		frag.SetStates(subfragment.Out, &split)
 		return frag.Fragment{
 			Start: subfragment.Start,
-			Out:   []*frag.State{split.Branch2},
+			Out:   []*frag.State{&split.Branch2},
 		}
 	case *ast.OptionalNode:
 		subfragment := processNode(node.Child)
 		split := frag.SplitState{
-			Branch1: &subfragment.Start,
+			Branch1: subfragment.Start,
 			Branch2: nil,
 		}
 		return frag.Fragment{
 			Start: &split,
-			Out:   append(subfragment.Out, split.Branch2),
+			Out:   append(subfragment.Out, &split.Branch2),
 		}
 	case *ast.LiteralNode:
 		matcher := frag.MatcherState{
@@ -67,7 +67,7 @@ func processNode(n ast.ASTNode) frag.Fragment {
 		}
 		return frag.Fragment{
 			Start: &matcher,
-			Out:   []*frag.State{matcher.Out},
+			Out:   []*frag.State{&matcher.Out},
 		}
 	case *ast.CharacterSetNode:
 		var characterClassesMatchers []matcher.PredefinedClassMatcher
@@ -84,6 +84,7 @@ func processNode(n ast.ASTNode) frag.Fragment {
 		matcher := frag.MatcherState{
 			Out: nil,
 			Matcher: &matcher.CharacterSetMatcher{
+				IsPositive:               node.IsPositive,
 				Literals:                 node.Literals,
 				Ranges:                   node.Ranges,
 				CharacterClassesMatchers: characterClassesMatchers,
@@ -91,7 +92,7 @@ func processNode(n ast.ASTNode) frag.Fragment {
 		}
 		return frag.Fragment{
 			Start: &matcher,
-			Out:   []*frag.State{matcher.Out},
+			Out:   []*frag.State{&matcher.Out},
 		}
 	case *ast.WildcardNode:
 		matcher := frag.MatcherState{
@@ -100,7 +101,7 @@ func processNode(n ast.ASTNode) frag.Fragment {
 		}
 		return frag.Fragment{
 			Start: &matcher,
-			Out:   []*frag.State{matcher.Out},
+			Out:   []*frag.State{&matcher.Out},
 		}
 	case *ast.DigitNode:
 		matcher := frag.MatcherState{
@@ -109,7 +110,7 @@ func processNode(n ast.ASTNode) frag.Fragment {
 		}
 		return frag.Fragment{
 			Start: &matcher,
-			Out:   []*frag.State{matcher.Out},
+			Out:   []*frag.State{&matcher.Out},
 		}
 	case *ast.AlphaNumericNode:
 		matcher := frag.MatcherState{
@@ -118,15 +119,23 @@ func processNode(n ast.ASTNode) frag.Fragment {
 		}
 		return frag.Fragment{
 			Start: &matcher,
-			Out:   []*frag.State{matcher.Out},
+			Out:   []*frag.State{&matcher.Out},
 		}
 	case *ast.StartAnchorNode:
+		s := &frag.StartAnchorState{
+			Out: nil,
+		}
 		return frag.Fragment{
-			Start: &frag.StartAnchorState{},
+			Start: s,
+			Out:   []*frag.State{&s.Out},
 		}
 	case *ast.EndAnchorNode:
+		s := &frag.EndAnchorState{
+			Out: nil,
+		}
 		return frag.Fragment{
-			Start: &frag.EndAnchorState{},
+			Start: s,
+			Out:   []*frag.State{&s.Out},
 		}
 	default:
 		return frag.Fragment{}
@@ -139,5 +148,6 @@ func Build(inputPattern string) frag.Fragment {
 	f := processNode(tree)
 	acceptingState := &frag.AcceptingState{}
 	frag.SetStates(f.Out, acceptingState)
+	f.Out = []*frag.State{}
 	return f
 }

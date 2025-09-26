@@ -46,7 +46,7 @@ func (p *Parser) parseExpression() ast.ASTNode {
 func (p *Parser) parseTerm() ast.ASTNode {
 	node := p.parseFactor()
 
-	for token.IsStarter(p.currentToken()) {
+	for token.CanConcatenate(p.currentToken()) {
 		rightNode := p.parseFactor()
 		node = &ast.ConcatenationNode{Left: node, Right: rightNode}
 	}

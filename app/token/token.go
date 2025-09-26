@@ -39,10 +39,10 @@ func IsGroupingCloser(t Token) bool {
 	return ok
 }
 
-func IsStarter(t Token) bool {
+func CanConcatenate(t Token) bool {
 	switch t.(type) {
 	case *Literal, *CharacterSet, *Wildcard, *Digit, *AlphaNumeric,
-		*StartAnchor, *GroupingOpener:
+		*StartAnchor, *EndAnchor, *GroupingOpener:
 		return true
 	default:
 		return false

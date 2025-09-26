@@ -23,24 +23,24 @@ func (s *BaseState) isState() {}
 
 type SplitState struct {
 	BaseState
-	Branch1 *State
-	Branch2 *State
+	Branch1 State
+	Branch2 State
 }
 
 type MatcherState struct {
 	BaseState
-	Out     *State
+	Out     State
 	Matcher matcher.Matcher
 }
 
 type StartAnchorState struct {
 	BaseState
-	Out *State
+	Out State
 }
 
 type EndAnchorState struct {
 	BaseState
-	Out *State
+	Out State
 }
 
 type AcceptingState struct {

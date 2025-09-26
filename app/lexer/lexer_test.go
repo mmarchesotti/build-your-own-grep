@@ -56,7 +56,8 @@ func TestTokenize(t *testing.T) {
 			input: "[abc]",
 			expected: []token.Token{
 				&token.CharacterSet{
-					Literals: []rune{'a', 'b', 'c'},
+					IsPositive: true,
+					Literals:   []rune{'a', 'b', 'c'},
 				},
 			},
 		},
@@ -65,7 +66,7 @@ func TestTokenize(t *testing.T) {
 			input: "[^abc]",
 			expected: []token.Token{
 				&token.CharacterSet{
-					IsPositive: true,
+					IsPositive: false,
 					Literals:   []rune{'a', 'b', 'c'},
 				},
 			},
@@ -75,7 +76,7 @@ func TestTokenize(t *testing.T) {
 			input: `[a\d]`,
 			expected: []token.Token{
 				&token.CharacterSet{
-					IsPositive: false,
+					IsPositive: true,
 					Literals:   []rune{'a'},
 					CharacterClasses: []predefinedclass.PredefinedClass{
 						predefinedclass.ClassDigit,
@@ -88,7 +89,7 @@ func TestTokenize(t *testing.T) {
 			input: `[]`,
 			expected: []token.Token{
 				&token.CharacterSet{
-					IsPositive: false,
+					IsPositive: true,
 				},
 			},
 		},
@@ -98,9 +99,23 @@ func TestTokenize(t *testing.T) {
 			expected: []token.Token{
 				&token.Literal{Literal: 'a'},
 				&token.CharacterSet{
-					IsPositive: false,
+					IsPositive: true,
 					Literals:   []rune{'b', 'c'},
 				},
+			},
+		},
+		{
+			name:  "combination of multiple characters",
+			input: `a(b|c)*d`,
+			expected: []token.Token{
+				&token.Literal{Literal: 'a'},
+				&token.GroupingOpener{},
+				&token.Literal{Literal: 'b'},
+				&token.Alternation{},
+				&token.Literal{Literal: 'c'},
+				&token.GroupingCloser{},
+				&token.KleeneClosure{},
+				&token.Literal{Literal: 'd'},
 			},
 		},
 		// {
