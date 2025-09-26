@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"unicode/utf8"
 
-	"github.com/mmarchesotti/build-your-own-grep/app/engine"
-	"github.com/mmarchesotti/build-your-own-grep/app/lexer"
+	"github.com/mmarchesotti/build-your-own-grep/app/buildnfa"
+	"github.com/mmarchesotti/build-your-own-grep/app/nfa/frag"
 )
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>
@@ -37,34 +38,56 @@ func main() {
 }
 
 func matchLine(line []byte, inputPattern string) bool {
-	patterns := lexer.Tokenize(inputPattern)
+	nfa := buildnfa.Build(inputPattern)
+	startNode := nfa.Start
 
-	for startingIndex := 0; startingIndex < len(line); startingIndex++ {
-		currentIndex := startingIndex
-		matchSucceeded := true
-
-		ctx := &engine.MatchContext{
-			Line:      line,
-			Index:     currentIndex,
-			IsAtStart: (startingIndex == 0),
-			IsAtEnd:   (startingIndex == len(line)),
-		}
-
-		for _, p := range patterns {
-			bytesConsumed, didMatch := p.Match(ctx)
-			if !didMatch {
-				matchSucceeded = false
-				break
-			}
-			ctx.Index += bytesConsumed
-			ctx.IsAtStart = false
-			ctx.IsAtEnd = (ctx.Index == len(line))
-		}
-
+	for lineStartIndex := 0; lineStartIndex <= len(line); {
+		matchSucceeded := matchLineAt(startNode, line, lineStartIndex)
 		if matchSucceeded {
 			return true
 		}
+
+		_, size := utf8.DecodeRune(line[lineStartIndex:])
+		if size == 0 {
+			break
+		}
+		lineStartIndex += size
 	}
 
 	return false
+}
+
+func matchLineAt(n frag.State, line []byte, lineIndex int) bool {
+	switch node := n.(type) {
+	case *frag.MatcherState:
+		if lineIndex >= len(line) {
+			return false
+		}
+
+		nextRune, size := utf8.DecodeRune(line[lineIndex:])
+		if node.Matcher.Match(nextRune) {
+			lineIndex += size
+			return matchLineAt(node.Out, line, lineIndex)
+		} else {
+			return false
+		}
+	case *frag.SplitState:
+		return matchLineAt(node.Branch1, line, lineIndex) ||
+			matchLineAt(node.Branch2, line, lineIndex)
+	case *frag.AcceptingState:
+		return true
+	case *frag.StartAnchorState:
+		if lineIndex == 0 {
+			return matchLineAt(node.Out, line, lineIndex)
+		} else {
+			return false
+		}
+	case *frag.EndAnchorState:
+		if lineIndex == len(line) {
+			return matchLineAt(node.Out, line, lineIndex)
+		} else {
+			return false
+		}
+	}
+	return true
 }
