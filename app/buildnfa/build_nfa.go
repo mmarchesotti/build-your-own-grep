@@ -8,6 +8,17 @@ import (
 	"github.com/mmarchesotti/build-your-own-grep/app/predefinedclass"
 )
 
+func newMatcherFragment(m matcher.Matcher) nfa.Fragment {
+	state := nfa.MatcherState{
+		Out:     nil,
+		Matcher: m,
+	}
+	return nfa.Fragment{
+		Start: &state,
+		Out:   []*nfa.State{&state.Out},
+	}
+}
+
 func processNode(n ast.ASTNode) nfa.Fragment {
 	switch node := n.(type) {
 	case *ast.AlternationNode:
@@ -60,15 +71,6 @@ func processNode(n ast.ASTNode) nfa.Fragment {
 			Start: &split,
 			Out:   append(subfragment.Out, &split.Branch2),
 		}
-	case *ast.LiteralNode:
-		matcher := nfa.MatcherState{
-			Out:     nil,
-			Matcher: &matcher.LiteralMatcher{Literal: node.Literal},
-		}
-		return nfa.Fragment{
-			Start: &matcher,
-			Out:   []*nfa.State{&matcher.Out},
-		}
 	case *ast.CharacterSetNode:
 		var characterClassesMatchers []matcher.PredefinedClassMatcher
 		for _, characterClass := range node.CharacterClasses {
@@ -81,46 +83,21 @@ func processNode(n ast.ASTNode) nfa.Fragment {
 			}
 			characterClassesMatchers = append(characterClassesMatchers, m)
 		}
-		matcher := nfa.MatcherState{
-			Out: nil,
-			Matcher: &matcher.CharacterSetMatcher{
-				IsPositive:               node.IsPositive,
-				Literals:                 node.Literals,
-				Ranges:                   node.Ranges,
-				CharacterClassesMatchers: characterClassesMatchers,
-			},
+		characterSetMatcher := &matcher.CharacterSetMatcher{
+			IsPositive:               node.IsPositive,
+			Literals:                 node.Literals,
+			Ranges:                   node.Ranges,
+			CharacterClassesMatchers: characterClassesMatchers,
 		}
-		return nfa.Fragment{
-			Start: &matcher,
-			Out:   []*nfa.State{&matcher.Out},
-		}
+		return newMatcherFragment(characterSetMatcher)
+	case *ast.LiteralNode:
+		return newMatcherFragment(&matcher.LiteralMatcher{Literal: node.Literal})
 	case *ast.WildcardNode:
-		matcher := nfa.MatcherState{
-			Out:     nil,
-			Matcher: &matcher.WildcardMatcher{},
-		}
-		return nfa.Fragment{
-			Start: &matcher,
-			Out:   []*nfa.State{&matcher.Out},
-		}
+		return newMatcherFragment(&matcher.WildcardMatcher{})
 	case *ast.DigitNode:
-		matcher := nfa.MatcherState{
-			Out:     nil,
-			Matcher: &matcher.DigitMatcher{},
-		}
-		return nfa.Fragment{
-			Start: &matcher,
-			Out:   []*nfa.State{&matcher.Out},
-		}
+		return newMatcherFragment(&matcher.DigitMatcher{})
 	case *ast.AlphaNumericNode:
-		matcher := nfa.MatcherState{
-			Out:     nil,
-			Matcher: &matcher.AlphaNumericMatcher{},
-		}
-		return nfa.Fragment{
-			Start: &matcher,
-			Out:   []*nfa.State{&matcher.Out},
-		}
+		return newMatcherFragment(&matcher.AlphaNumericMatcher{})
 	case *ast.StartAnchorNode:
 		s := &nfa.StartAnchorState{
 			Out: nil,
