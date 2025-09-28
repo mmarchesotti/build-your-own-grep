@@ -2,19 +2,19 @@ package buildnfa
 
 import (
 	"github.com/mmarchesotti/build-your-own-grep/app/ast"
-	"github.com/mmarchesotti/build-your-own-grep/app/nfa/frag"
-	"github.com/mmarchesotti/build-your-own-grep/app/nfa/matcher"
+	"github.com/mmarchesotti/build-your-own-grep/app/matcher"
+	"github.com/mmarchesotti/build-your-own-grep/app/nfa"
 	"github.com/mmarchesotti/build-your-own-grep/app/parser"
 	"github.com/mmarchesotti/build-your-own-grep/app/predefinedclass"
 )
 
-func processNode(n ast.ASTNode) frag.Fragment {
+func processNode(n ast.ASTNode) nfa.Fragment {
 	switch node := n.(type) {
 	case *ast.AlternationNode:
 		subfragment1 := processNode(node.Left)
 		subfragment2 := processNode(node.Right)
-		return frag.Fragment{
-			Start: &frag.SplitState{
+		return nfa.Fragment{
+			Start: &nfa.SplitState{
 				Branch1: subfragment1.Start,
 				Branch2: subfragment2.Start,
 			},
@@ -23,51 +23,51 @@ func processNode(n ast.ASTNode) frag.Fragment {
 	case *ast.ConcatenationNode:
 		subfragment1 := processNode(node.Left)
 		subfragment2 := processNode(node.Right)
-		frag.SetStates(subfragment1.Out, subfragment2.Start)
-		return frag.Fragment{
+		nfa.SetStates(subfragment1.Out, subfragment2.Start)
+		return nfa.Fragment{
 			Start: subfragment1.Start,
 			Out:   subfragment2.Out,
 		}
 	case *ast.KleeneClosureNode:
 		subfragment := processNode(node.Child)
-		split := frag.SplitState{
+		split := nfa.SplitState{
 			Branch1: subfragment.Start,
 			Branch2: nil,
 		}
-		frag.SetStates(subfragment.Out, &split)
-		return frag.Fragment{
+		nfa.SetStates(subfragment.Out, &split)
+		return nfa.Fragment{
 			Start: &split,
-			Out:   []*frag.State{&split.Branch2},
+			Out:   []*nfa.State{&split.Branch2},
 		}
 	case *ast.PositiveClosureNode:
 		subfragment := processNode(node.Child)
-		split := frag.SplitState{
+		split := nfa.SplitState{
 			Branch1: subfragment.Start,
 			Branch2: nil,
 		}
-		frag.SetStates(subfragment.Out, &split)
-		return frag.Fragment{
+		nfa.SetStates(subfragment.Out, &split)
+		return nfa.Fragment{
 			Start: subfragment.Start,
-			Out:   []*frag.State{&split.Branch2},
+			Out:   []*nfa.State{&split.Branch2},
 		}
 	case *ast.OptionalNode:
 		subfragment := processNode(node.Child)
-		split := frag.SplitState{
+		split := nfa.SplitState{
 			Branch1: subfragment.Start,
 			Branch2: nil,
 		}
-		return frag.Fragment{
+		return nfa.Fragment{
 			Start: &split,
 			Out:   append(subfragment.Out, &split.Branch2),
 		}
 	case *ast.LiteralNode:
-		matcher := frag.MatcherState{
+		matcher := nfa.MatcherState{
 			Out:     nil,
 			Matcher: &matcher.LiteralMatcher{Literal: node.Literal},
 		}
-		return frag.Fragment{
+		return nfa.Fragment{
 			Start: &matcher,
-			Out:   []*frag.State{&matcher.Out},
+			Out:   []*nfa.State{&matcher.Out},
 		}
 	case *ast.CharacterSetNode:
 		var characterClassesMatchers []matcher.PredefinedClassMatcher
@@ -81,7 +81,7 @@ func processNode(n ast.ASTNode) frag.Fragment {
 			}
 			characterClassesMatchers = append(characterClassesMatchers, m)
 		}
-		matcher := frag.MatcherState{
+		matcher := nfa.MatcherState{
 			Out: nil,
 			Matcher: &matcher.CharacterSetMatcher{
 				IsPositive:               node.IsPositive,
@@ -90,64 +90,64 @@ func processNode(n ast.ASTNode) frag.Fragment {
 				CharacterClassesMatchers: characterClassesMatchers,
 			},
 		}
-		return frag.Fragment{
+		return nfa.Fragment{
 			Start: &matcher,
-			Out:   []*frag.State{&matcher.Out},
+			Out:   []*nfa.State{&matcher.Out},
 		}
 	case *ast.WildcardNode:
-		matcher := frag.MatcherState{
+		matcher := nfa.MatcherState{
 			Out:     nil,
 			Matcher: &matcher.WildcardMatcher{},
 		}
-		return frag.Fragment{
+		return nfa.Fragment{
 			Start: &matcher,
-			Out:   []*frag.State{&matcher.Out},
+			Out:   []*nfa.State{&matcher.Out},
 		}
 	case *ast.DigitNode:
-		matcher := frag.MatcherState{
+		matcher := nfa.MatcherState{
 			Out:     nil,
 			Matcher: &matcher.DigitMatcher{},
 		}
-		return frag.Fragment{
+		return nfa.Fragment{
 			Start: &matcher,
-			Out:   []*frag.State{&matcher.Out},
+			Out:   []*nfa.State{&matcher.Out},
 		}
 	case *ast.AlphaNumericNode:
-		matcher := frag.MatcherState{
+		matcher := nfa.MatcherState{
 			Out:     nil,
 			Matcher: &matcher.AlphaNumericMatcher{},
 		}
-		return frag.Fragment{
+		return nfa.Fragment{
 			Start: &matcher,
-			Out:   []*frag.State{&matcher.Out},
+			Out:   []*nfa.State{&matcher.Out},
 		}
 	case *ast.StartAnchorNode:
-		s := &frag.StartAnchorState{
+		s := &nfa.StartAnchorState{
 			Out: nil,
 		}
-		return frag.Fragment{
+		return nfa.Fragment{
 			Start: s,
-			Out:   []*frag.State{&s.Out},
+			Out:   []*nfa.State{&s.Out},
 		}
 	case *ast.EndAnchorNode:
-		s := &frag.EndAnchorState{
+		s := &nfa.EndAnchorState{
 			Out: nil,
 		}
-		return frag.Fragment{
+		return nfa.Fragment{
 			Start: s,
-			Out:   []*frag.State{&s.Out},
+			Out:   []*nfa.State{&s.Out},
 		}
 	default:
-		return frag.Fragment{}
+		return nfa.Fragment{}
 		// TODO ERROR
 	}
 }
 
-func Build(inputPattern string) frag.Fragment {
+func Build(inputPattern string) nfa.Fragment {
 	tree := parser.Parse(inputPattern)
 	f := processNode(tree)
-	acceptingState := &frag.AcceptingState{}
-	frag.SetStates(f.Out, acceptingState)
-	f.Out = []*frag.State{}
+	acceptingState := &nfa.AcceptingState{}
+	nfa.SetStates(f.Out, acceptingState)
+	f.Out = []*nfa.State{}
 	return f
 }

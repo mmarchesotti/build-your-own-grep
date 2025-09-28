@@ -7,7 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/mmarchesotti/build-your-own-grep/app/buildnfa"
-	"github.com/mmarchesotti/build-your-own-grep/app/nfa/frag"
+	"github.com/mmarchesotti/build-your-own-grep/app/nfa"
 )
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>
@@ -57,9 +57,9 @@ func matchLine(line []byte, inputPattern string) bool {
 	return false
 }
 
-func matchLineAt(n frag.State, line []byte, lineIndex int) bool {
+func matchLineAt(n nfa.State, line []byte, lineIndex int) bool {
 	switch node := n.(type) {
-	case *frag.MatcherState:
+	case *nfa.MatcherState:
 		if lineIndex >= len(line) {
 			return false
 		}
@@ -71,18 +71,18 @@ func matchLineAt(n frag.State, line []byte, lineIndex int) bool {
 		} else {
 			return false
 		}
-	case *frag.SplitState:
+	case *nfa.SplitState:
 		return matchLineAt(node.Branch1, line, lineIndex) ||
 			matchLineAt(node.Branch2, line, lineIndex)
-	case *frag.AcceptingState:
+	case *nfa.AcceptingState:
 		return true
-	case *frag.StartAnchorState:
+	case *nfa.StartAnchorState:
 		if lineIndex == 0 {
 			return matchLineAt(node.Out, line, lineIndex)
 		} else {
 			return false
 		}
-	case *frag.EndAnchorState:
+	case *nfa.EndAnchorState:
 		if lineIndex == len(line) {
 			return matchLineAt(node.Out, line, lineIndex)
 		} else {

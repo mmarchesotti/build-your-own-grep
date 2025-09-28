@@ -1,6 +1,6 @@
-package frag
+package nfa
 
-import "github.com/mmarchesotti/build-your-own-grep/app/nfa/matcher"
+import "github.com/mmarchesotti/build-your-own-grep/app/matcher"
 
 type Fragment struct {
 	Start State
