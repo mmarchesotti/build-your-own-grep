@@ -89,5 +89,5 @@ func matchLineAt(n nfa.State, line []byte, lineIndex int) bool {
 			return false
 		}
 	}
-	return true
+	return false
 }
