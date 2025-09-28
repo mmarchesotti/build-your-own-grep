@@ -1,0 +1,8 @@
+# This is the top-most .editorconfig file
+root = true
+
+# Apply these settings to all files
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
