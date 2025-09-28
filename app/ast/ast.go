@@ -1,6 +1,6 @@
 package ast
 
-import predefinedclass "github.com/mmarchesotti/build-your-own-grep/internal/predefinedclass"
+import predefinedclass "github.com/mmarchesotti/build-your-own-grep/app/predefinedclass"
 
 type ASTNode interface {
 	isASTNode()

@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"github.com/mmarchesotti/build-your-own-grep/internal/ast"
-	"github.com/mmarchesotti/build-your-own-grep/internal/lexer"
-	"github.com/mmarchesotti/build-your-own-grep/internal/token"
+	"github.com/mmarchesotti/build-your-own-grep/app/ast"
+	"github.com/mmarchesotti/build-your-own-grep/app/lexer"
+	"github.com/mmarchesotti/build-your-own-grep/app/token"
 )
 
 type Parser struct {

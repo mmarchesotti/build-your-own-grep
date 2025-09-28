@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/mmarchesotti/build-your-own-grep/internal/ast"
+	"github.com/mmarchesotti/build-your-own-grep/app/ast"
 )
 
 // --- Test Helper Functions ---

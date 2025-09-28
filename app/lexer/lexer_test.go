@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/mmarchesotti/build-your-own-grep/internal/predefinedclass"
-	"github.com/mmarchesotti/build-your-own-grep/internal/token"
+	"github.com/mmarchesotti/build-your-own-grep/app/predefinedclass"
+	"github.com/mmarchesotti/build-your-own-grep/app/token"
 )
 
 func TestTokenize(t *testing.T) {
