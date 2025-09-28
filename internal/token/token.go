@@ -1,6 +1,6 @@
 package token
 
-import "github.com/mmarchesotti/build-your-own-grep/app/predefinedclass"
+import "github.com/mmarchesotti/build-your-own-grep/internal/predefinedclass"
 
 type TokenType string
 

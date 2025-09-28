@@ -6,8 +6,8 @@ import (
 	"os"
 	"unicode/utf8"
 
-	"github.com/mmarchesotti/build-your-own-grep/app/buildnfa"
-	"github.com/mmarchesotti/build-your-own-grep/app/nfa"
+	"github.com/mmarchesotti/build-your-own-grep/internal/buildnfa"
+	"github.com/mmarchesotti/build-your-own-grep/internal/nfa"
 )
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>

@@ -1,11 +1,11 @@
 package buildnfa
 
 import (
-	"github.com/mmarchesotti/build-your-own-grep/app/ast"
-	"github.com/mmarchesotti/build-your-own-grep/app/matcher"
-	"github.com/mmarchesotti/build-your-own-grep/app/nfa"
-	"github.com/mmarchesotti/build-your-own-grep/app/parser"
-	"github.com/mmarchesotti/build-your-own-grep/app/predefinedclass"
+	"github.com/mmarchesotti/build-your-own-grep/internal/ast"
+	"github.com/mmarchesotti/build-your-own-grep/internal/matcher"
+	"github.com/mmarchesotti/build-your-own-grep/internal/nfa"
+	"github.com/mmarchesotti/build-your-own-grep/internal/parser"
+	"github.com/mmarchesotti/build-your-own-grep/internal/predefinedclass"
 )
 
 func processNode(n ast.ASTNode) nfa.Fragment {
