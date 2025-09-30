@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"unicode/utf8"
 
-	"github.com/mmarchesotti/build-your-own-grep/app/buildnfa"
-	"github.com/mmarchesotti/build-your-own-grep/app/nfa"
+	"github.com/mmarchesotti/build-your-own-grep/app/nfasimulator"
 )
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>
@@ -26,7 +24,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	ok := matchLine(line, pattern)
+	ok := nfasimulator.Simulate(line, pattern)
 
 	if !ok {
 		fmt.Println("Program returned 1")
@@ -35,59 +33,4 @@ func main() {
 
 	fmt.Println("Program returned 0")
 	// default exit code is 0 which means success
-}
-
-func matchLine(line []byte, inputPattern string) bool {
-	nfa := buildnfa.Build(inputPattern)
-	startNode := nfa.Start
-
-	for lineStartIndex := 0; lineStartIndex <= len(line); {
-		matchSucceeded := matchLineAt(startNode, line, lineStartIndex)
-		if matchSucceeded {
-			return true
-		}
-
-		_, size := utf8.DecodeRune(line[lineStartIndex:])
-		if size == 0 {
-			break
-		}
-		lineStartIndex += size
-	}
-
-	return false
-}
-
-func matchLineAt(n nfa.State, line []byte, lineIndex int) bool {
-	switch node := n.(type) {
-	case *nfa.MatcherState:
-		if lineIndex >= len(line) {
-			return false
-		}
-
-		nextRune, size := utf8.DecodeRune(line[lineIndex:])
-		if node.Matcher.Match(nextRune) {
-			lineIndex += size
-			return matchLineAt(node.Out, line, lineIndex)
-		} else {
-			return false
-		}
-	case *nfa.SplitState:
-		return matchLineAt(node.Branch1, line, lineIndex) ||
-			matchLineAt(node.Branch2, line, lineIndex)
-	case *nfa.AcceptingState:
-		return true
-	case *nfa.StartAnchorState:
-		if lineIndex == 0 {
-			return matchLineAt(node.Out, line, lineIndex)
-		} else {
-			return false
-		}
-	case *nfa.EndAnchorState:
-		if lineIndex == len(line) {
-			return matchLineAt(node.Out, line, lineIndex)
-		} else {
-			return false
-		}
-	}
-	return false
 }

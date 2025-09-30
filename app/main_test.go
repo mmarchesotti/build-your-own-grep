@@ -1,7 +1,11 @@
 // Create this file right next to your main.go
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/mmarchesotti/build-your-own-grep/app/nfasimulator"
+)
 
 func TestMatchLine(t *testing.T) {
 	testCases := []struct {
@@ -159,7 +163,7 @@ func TestMatchLine(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Run the function we're testing
-			actualMatch := matchLine(tc.line, tc.pattern)
+			actualMatch := nfasimulator.Simulate(tc.line, tc.pattern)
 
 			// Compare the actual result with what we expected
 			if actualMatch != tc.expectedMatch {
