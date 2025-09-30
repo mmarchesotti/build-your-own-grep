@@ -163,7 +163,10 @@ func TestMatchLine(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Run the function we're testing
-			actualMatch := nfasimulator.Simulate(tc.line, tc.pattern)
+			actualMatch, err := nfasimulator.Simulate(tc.line, tc.pattern)
+			if err != nil {
+				t.Errorf("error '%s':", err)
+			}
 
 			// Compare the actual result with what we expected
 			if actualMatch != tc.expectedMatch {

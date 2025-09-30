@@ -20,17 +20,16 @@ func main() {
 	line, err := io.ReadAll(os.Stdin) // assume we're only dealing with a singular line
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: read input text: %v\n", err)
-		fmt.Println("Program returned 2")
 		os.Exit(2)
 	}
 
-	ok := nfasimulator.Simulate(line, pattern)
-
-	if !ok {
-		fmt.Println("Program returned 1")
-		os.Exit(1)
+	ok, err := nfasimulator.Simulate(line, pattern)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: invalid pattern: %v\n", err)
+		os.Exit(2)
 	}
 
-	fmt.Println("Program returned 0")
-	// default exit code is 0 which means success
+	if !ok {
+		os.Exit(1)
+	}
 }

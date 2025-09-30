@@ -12,8 +12,11 @@ type simulationState struct {
 	lineIndex int
 }
 
-func Simulate(line []byte, inputPattern string) bool {
-	fragment := buildnfa.Build(inputPattern)
+func Simulate(line []byte, inputPattern string) (bool, error) {
+	fragment, err := buildnfa.Build(inputPattern)
+	if err != nil {
+		return false, err
+	}
 	var statesList []simulationState
 	for lineIndex := 0; lineIndex <= len(line); {
 		startState := simulationState{
@@ -44,7 +47,11 @@ func Simulate(line []byte, inputPattern string) bool {
 			}
 
 			nextRune, size := utf8.DecodeRune(line[s.lineIndex:])
-			if st.Matcher.Match(nextRune) {
+			m, err := st.Matcher.Match(nextRune)
+			if err != nil {
+				return false, err
+			}
+			if m {
 				nextState := simulationState{
 					state:     st.Out,
 					lineIndex: s.lineIndex + size,
@@ -63,7 +70,7 @@ func Simulate(line []byte, inputPattern string) bool {
 			statesList = append(statesList, nextState1)
 			statesList = append(statesList, nextState2)
 		case *nfa.AcceptingState:
-			return true
+			return true, nil
 		case *nfa.StartAnchorState:
 			if s.lineIndex == 0 {
 				nextState := simulationState{
@@ -83,5 +90,5 @@ func Simulate(line []byte, inputPattern string) bool {
 		}
 	}
 
-	return false
+	return false, nil
 }

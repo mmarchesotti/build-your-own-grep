@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/mmarchesotti/build-your-own-grep/app/ast"
 	"github.com/mmarchesotti/build-your-own-grep/app/lexer"
 	"github.com/mmarchesotti/build-your-own-grep/app/token"
@@ -31,31 +33,46 @@ func (p *Parser) consumeToken() token.Token {
 	return token
 }
 
-func (p *Parser) parseExpression() ast.ASTNode {
-	node := p.parseTerm()
+func (p *Parser) parseExpression() (ast.ASTNode, error) {
+	node, err := p.parseTerm()
+	if err != nil {
+		return nil, err
+	}
 
 	for token.IsAlternation(p.currentToken()) {
 		p.consumeToken()
-		rightNode := p.parseTerm()
+		rightNode, err := p.parseTerm()
+		if err != nil {
+			return nil, err
+		}
 		node = &ast.AlternationNode{Left: node, Right: rightNode}
 	}
 
-	return node
+	return node, nil
 }
 
-func (p *Parser) parseTerm() ast.ASTNode {
-	node := p.parseFactor()
+func (p *Parser) parseTerm() (ast.ASTNode, error) {
+	node, err := p.parseFactor()
+	if err != nil {
+		return nil, err
+	}
 
 	for token.CanConcatenate(p.currentToken()) {
-		rightNode := p.parseFactor()
+		rightNode, err := p.parseFactor()
+		if err != nil {
+			return nil, err
+		}
 		node = &ast.ConcatenationNode{Left: node, Right: rightNode}
 	}
 
-	return node
+	return node, nil
 }
 
-func (p *Parser) parseFactor() ast.ASTNode {
-	node := p.parseAtom()
+func (p *Parser) parseFactor() (ast.ASTNode, error) {
+	node, err := p.parseAtom()
+	if err != nil {
+		return nil, err
+	}
 
 	for token.IsUnaryOperator(p.currentToken()) {
 		t := p.consumeToken()
@@ -75,59 +92,70 @@ func (p *Parser) parseFactor() ast.ASTNode {
 		}
 	}
 
-	return node
+	return node, nil
 }
 
-func (p *Parser) parseAtom() ast.ASTNode {
+func (p *Parser) parseAtom() (ast.ASTNode, error) {
 	switch t := p.currentToken().(type) {
 	case *token.GroupingOpener:
 		p.consumeToken()
-		node := p.parseExpression()
+		node, err := p.parseExpression()
+		if err != nil {
+			return nil, err
+		}
 
 		if !token.IsGroupingCloser(p.currentToken()) {
-			// TODO ERROR UNMATCHED GROUP OPENER
+			return nil, fmt.Errorf("unmatched group opener")
 		}
 		p.consumeToken()
-		return node
+		return node, nil
 	case *token.Literal:
 		p.consumeToken()
-		return &ast.LiteralNode{
+		node := &ast.LiteralNode{
 			Literal: t.Literal,
 		}
+		return node, nil
 	case *token.CharacterSet:
 		p.consumeToken()
-		return &ast.CharacterSetNode{
+		node := &ast.CharacterSetNode{
 			IsPositive:       t.IsPositive,
 			Literals:         t.Literals,
 			Ranges:           t.Ranges,
 			CharacterClasses: t.CharacterClasses,
 		}
+		return node, nil
 	case *token.Wildcard:
 		p.consumeToken()
-		return &ast.WildcardNode{}
+		node := &ast.WildcardNode{}
+		return node, nil
 	case *token.Digit:
 		p.consumeToken()
-		return &ast.DigitNode{}
+		node := &ast.DigitNode{}
+		return node, nil
 	case *token.AlphaNumeric:
 		p.consumeToken()
-		return &ast.AlphaNumericNode{}
+		node := &ast.AlphaNumericNode{}
+		return node, nil
 	case *token.StartAnchor:
 		p.consumeToken()
-		return &ast.StartAnchorNode{}
+		node := &ast.StartAnchorNode{}
+		return node, nil
 	case *token.EndAnchor:
 		p.consumeToken()
-		return &ast.EndAnchorNode{}
+		node := &ast.EndAnchorNode{}
+		return node, nil
 	case *token.GroupingCloser:
-		// TODO ERROR UNMATCHED GROUP CLOSER
-		return nil
+		return nil, fmt.Errorf("unmatched group closer")
 	default:
-		// TODO ERROR UNEXPECTED TOKEN
-		return nil
+		return nil, fmt.Errorf("unexpected token: %T", t)
 	}
 }
 
-func Parse(inputPattern string) ast.ASTNode {
-	tokens := lexer.Tokenize(inputPattern)
+func Parse(inputPattern string) (ast.ASTNode, error) {
+	tokens, err := lexer.Tokenize(inputPattern)
+	if err != nil {
+		return nil, err
+	}
 	parser := NewParser(tokens)
 	return parser.parseExpression()
 }

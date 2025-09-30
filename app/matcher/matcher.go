@@ -1,5 +1,7 @@
 package matcher
 
+import "fmt"
+
 func isDigit(r rune) bool {
 	return r >= '0' && r <= '9'
 }
@@ -20,15 +22,15 @@ func isAlphaNumeric(r rune) bool {
 	return isAlpha(r) || isDigit(r) || r == '_'
 }
 
-func match(r rune, rng [2]rune) bool {
+func match(r rune, rng [2]rune) (bool, error) {
 	if rng[1] > rng[0] {
-		// TODO ERROR RANGE VALUES REVERSED
+		return false, fmt.Errorf("range values reversed")
 	}
-	return r >= rng[0] && r <= rng[1]
+	return r >= rng[0] && r <= rng[1], nil
 }
 
 type Matcher interface {
-	Match(r rune) bool
+	Match(r rune) (bool, error)
 }
 
 type PredefinedClassMatcher interface {
@@ -40,8 +42,8 @@ type LiteralMatcher struct {
 	Literal rune
 }
 
-func (l *LiteralMatcher) Match(r rune) bool {
-	return r == l.Literal
+func (l *LiteralMatcher) Match(r rune) (bool, error) {
+	return r == l.Literal, nil
 }
 
 type CharacterSetMatcher struct {
@@ -51,43 +53,51 @@ type CharacterSetMatcher struct {
 	CharacterClassesMatchers []PredefinedClassMatcher
 }
 
-func (p *CharacterSetMatcher) Match(r rune) bool {
+func (p *CharacterSetMatcher) Match(r rune) (bool, error) {
 	for _, literal := range p.Literals {
 		if r == literal {
-			return p.IsPositive
+			return p.IsPositive, nil
 		}
 	}
 	for _, rng := range p.Ranges {
-		if match(r, rng) {
-			return p.IsPositive
+		m, err := match(r, rng)
+		if err != nil {
+			return false, err
+		}
+		if m {
+			return p.IsPositive, nil
 		}
 	}
 	for _, characterClass := range p.CharacterClassesMatchers {
-		if characterClass.Match(r) {
-			return p.IsPositive
+		m, err := characterClass.Match(r)
+		if err != nil {
+			return false, err
+		}
+		if m {
+			return p.IsPositive, nil
 		}
 	}
-	return !p.IsPositive
+	return !p.IsPositive, nil
 }
 
 type WildcardMatcher struct{}
 
-func (w *WildcardMatcher) Match(r rune) bool {
-	return true
+func (w *WildcardMatcher) Match(r rune) (bool, error) {
+	return true, nil
 }
 
 type DigitMatcher struct{}
 
-func (d *DigitMatcher) Match(r rune) bool {
-	return isDigit(r)
+func (d *DigitMatcher) Match(r rune) (bool, error) {
+	return isDigit(r), nil
 }
 
 func (d *DigitMatcher) isPredefinedClass() {}
 
 type AlphaNumericMatcher struct{}
 
-func (a *AlphaNumericMatcher) Match(r rune) bool {
-	return isAlphaNumeric(r)
+func (a *AlphaNumericMatcher) Match(r rune) (bool, error) {
+	return isAlphaNumeric(r), nil
 }
 
 func (a *AlphaNumericMatcher) isPredefinedClass() {}

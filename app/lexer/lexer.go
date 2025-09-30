@@ -1,13 +1,14 @@
 package lexer
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/mmarchesotti/build-your-own-grep/app/predefinedclass"
 	"github.com/mmarchesotti/build-your-own-grep/app/token"
 )
 
-func Tokenize(inputPattern string) []token.Token {
+func Tokenize(inputPattern string) ([]token.Token, error) {
 	tokens := make([]token.Token, 0, len(inputPattern))
 
 	for inputIndex := 0; inputIndex < len(inputPattern); inputIndex++ {
@@ -17,7 +18,7 @@ func Tokenize(inputPattern string) []token.Token {
 		switch currentCharacter {
 		case '\\':
 			if inputIndex+1 >= len(inputPattern) {
-				// TODO ERROR DANGLING BACKSLASH
+				return nil, fmt.Errorf("dangling backslash")
 			}
 			nextCharacter := inputPattern[inputIndex+1]
 			switch nextCharacter {
@@ -32,8 +33,7 @@ func Tokenize(inputPattern string) []token.Token {
 		case '[':
 			distanceToClosing := strings.Index(inputPattern[inputIndex:], "]")
 			if distanceToClosing == -1 {
-				// TODO ERROR UNMATCHED [
-				continue
+				return nil, fmt.Errorf("unmatched character set opener [")
 			}
 
 			var setLiterals []rune
@@ -52,7 +52,7 @@ func Tokenize(inputPattern string) []token.Token {
 
 				if currentGroupCharacter == '\\' {
 					if setIndex+1 >= len(setCharacters) {
-						// TODO ERROR DANGLING BLACKSLASH
+						return nil, fmt.Errorf("dangling backslash inside character set")
 					}
 					nextCharacter := setCharacters[setIndex+1]
 					switch nextCharacter {
@@ -101,5 +101,5 @@ func Tokenize(inputPattern string) []token.Token {
 		tokens = append(tokens, newToken)
 	}
 
-	return tokens
+	return tokens, nil
 }

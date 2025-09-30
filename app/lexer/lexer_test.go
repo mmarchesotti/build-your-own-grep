@@ -1,6 +1,7 @@
 package lexer
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -13,6 +14,7 @@ func TestTokenize(t *testing.T) {
 		name     string
 		input    string
 		expected []token.Token
+		err      error
 	}{
 		{
 			name:  "simple literals",
@@ -118,16 +120,32 @@ func TestTokenize(t *testing.T) {
 				&token.Literal{Literal: 'd'},
 			},
 		},
-		// {
-		// 	name:     "unmatched opening bracket",
-		// 	input:    `[abc`,
-		// 	expected: []token.Token{}, // TODO TEST ERROR HANDLING
-		// },
+		{
+			name:     "unmatched opening bracket",
+			input:    `[abc`,
+			expected: nil,
+			err:      fmt.Errorf("unmatched character set opener ["),
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := Tokenize(tt.input)
+			actual, actualErr := Tokenize(tt.input)
+
+			if actualErr != nil && tt.err == nil {
+				t.Fatalf("Tokenize() returned an unexpected error: %v", actualErr)
+			}
+
+			if actualErr == nil && tt.err != nil {
+				t.Fatalf("Tokenize() expected error '%v', but got nil", tt.err)
+			}
+
+			if actualErr != nil && tt.err != nil {
+				if actualErr.Error() != tt.err.Error() {
+					t.Fatalf("Tokenize() expected error '%v', but got '%v'", tt.err, actualErr)
+				}
+				return
+			}
 
 			if !reflect.DeepEqual(actual, tt.expected) {
 				t.Errorf("Tokenize() for input '%s' failed", tt.input)
