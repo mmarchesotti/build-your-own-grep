@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -17,6 +18,7 @@ func main() {
 	pattern := os.Args[2]
 
 	var line []byte
+	isFileInput := false
 	if len(os.Args) == 3 {
 		content, err := io.ReadAll(os.Stdin)
 		if err != nil {
@@ -25,6 +27,7 @@ func main() {
 		}
 		line = content
 	} else {
+		isFileInput = true
 		content, err := os.ReadFile(os.Args[3])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: read file: %v\n", err)
@@ -37,6 +40,13 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: invalid pattern: %v\n", err)
 		os.Exit(2)
+	}
+
+	if ok && isFileInput {
+		var out bytes.Buffer
+		out.Write(line)
+		out.WriteByte('\n')
+		os.Stdout.Write(out.Bytes())
 	}
 
 	if !ok {
