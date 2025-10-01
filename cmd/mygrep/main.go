@@ -8,10 +8,9 @@ import (
 	"github.com/mmarchesotti/build-your-own-grep/internal/nfasimulator"
 )
 
-// Usage: echo <input_text> | your_program.sh -E <pattern>
 func main() {
 	if len(os.Args) < 3 || os.Args[1] != "-E" {
-		fmt.Fprintf(os.Stderr, "usage: mygrep -E <pattern>\n")
+		fmt.Fprintf(os.Stderr, "usage: make run ARGS=\"-E <pattern> <file>\"\n")
 		os.Exit(2) // 1 means no lines were selected, >1 means error
 	}
 
