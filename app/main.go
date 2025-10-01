@@ -17,10 +17,21 @@ func main() {
 
 	pattern := os.Args[2]
 
-	line, err := io.ReadAll(os.Stdin) // assume we're only dealing with a singular line
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: read input text: %v\n", err)
-		os.Exit(2)
+	var line []byte
+	if len(os.Args) == 3 {
+		content, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: read input text: %v\n", err)
+			os.Exit(2)
+		}
+		line = content
+	} else {
+		content, err := os.ReadFile(os.Args[3])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: read file: %v\n", err)
+			os.Exit(2)
+		}
+		line = content
 	}
 
 	ok, err := nfasimulator.Simulate(line, pattern)
