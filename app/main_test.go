@@ -2,6 +2,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/mmarchesotti/build-your-own-grep/app/nfasimulator"
@@ -159,20 +161,110 @@ func TestMatchLine(t *testing.T) {
 		},
 	}
 
-	// The test runner iterates through each case in the table
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Run the function we're testing
 			actualMatch, err := nfasimulator.Simulate(tc.line, tc.pattern)
 			if err != nil {
 				t.Errorf("error '%s':", err)
 			}
 
-			// Compare the actual result with what we expected
 			if actualMatch != tc.expectedMatch {
 				t.Errorf("Pattern '%s' on line '%s': expected match %v, but got %v",
 					tc.pattern, string(tc.line), tc.expectedMatch, actualMatch)
 			}
 		})
 	}
+}
+
+func TestSimulateWithFile(t *testing.T) {
+	testCases := []struct {
+		name          string
+		fileContent   string
+		pattern       string
+		expectedMatch bool
+	}{
+		// Basic Literal Matches from a file
+		{
+			name:          "File - Literal: Simple match",
+			fileContent:   "apple\nbanana\ncherry",
+			pattern:       "banana",
+			expectedMatch: true,
+		},
+		{
+			name:          "File - Literal: No match",
+			fileContent:   "apple\nbanana\ncherry",
+			pattern:       "durian",
+			expectedMatch: false,
+		},
+
+		// Regex pattern matching
+		{
+			name:          "File - Regex: Match word starting with 'app'",
+			fileContent:   "application\napplepie\napplesauce",
+			pattern:       `^appl.*`,
+			expectedMatch: true,
+		},
+		{
+			name:          "File - Regex: Match lines with digits",
+			fileContent:   "line one\nline 2\nline three",
+			pattern:       `\d`,
+			expectedMatch: true,
+		},
+		{
+			name:          "File - Regex: Fails when not at the start",
+			fileContent:   "An application\nAn applepie",
+			pattern:       `^appl.*`,
+			expectedMatch: false,
+		},
+
+		// Edge Cases
+		{
+			name:          "File - Edge Case: Empty file",
+			fileContent:   "",
+			pattern:       "a",
+			expectedMatch: false,
+		},
+		{
+			name:          "File - Edge Case: Pattern matches entire file content",
+			fileContent:   "supercalifragilisticexpialidocious",
+			pattern:       ".*",
+			expectedMatch: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			filePath := createTestFile(t, tc.fileContent)
+
+			fileBytes, err := os.ReadFile(filePath)
+			if err != nil {
+				t.Fatalf("Failed to read temp file %s: %v", filePath, err)
+			}
+
+			actualMatch, err := nfasimulator.Simulate(fileBytes, tc.pattern)
+			if err != nil {
+				t.Errorf("Simulate returned an unexpected error: %v", err)
+			}
+
+			if actualMatch != tc.expectedMatch {
+				t.Errorf("Pattern '%s' on file with content '%s': expected match %v, but got %v",
+					tc.pattern, tc.fileContent, tc.expectedMatch, actualMatch)
+			}
+		})
+	}
+}
+
+func createTestFile(t *testing.T, content string) string {
+	t.Helper()
+
+	tempDir := t.TempDir()
+
+	filePath := filepath.Join(tempDir, "testfile.txt")
+
+	err := os.WriteFile(filePath, []byte(content), 0666)
+	if err != nil {
+		t.Fatalf("Failed to write to temporary file %s: %v", filePath, err)
+	}
+
+	return filePath
 }
