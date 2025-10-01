@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/mmarchesotti/build-your-own-grep/app/nfasimulator"
+	"github.com/mmarchesotti/build-your-own-grep/internal/nfasimulator"
 )
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>

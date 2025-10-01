@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mmarchesotti/build-your-own-grep/app/predefinedclass"
-	"github.com/mmarchesotti/build-your-own-grep/app/token"
+	"github.com/mmarchesotti/build-your-own-grep/internal/predefinedclass"
+	"github.com/mmarchesotti/build-your-own-grep/internal/token"
 )
 
 func Tokenize(inputPattern string) ([]token.Token, error) {

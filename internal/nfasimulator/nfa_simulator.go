@@ -3,8 +3,8 @@ package nfasimulator
 import (
 	"unicode/utf8"
 
-	"github.com/mmarchesotti/build-your-own-grep/app/buildnfa"
-	"github.com/mmarchesotti/build-your-own-grep/app/nfa"
+	"github.com/mmarchesotti/build-your-own-grep/internal/buildnfa"
+	"github.com/mmarchesotti/build-your-own-grep/internal/nfa"
 )
 
 type simulationState struct {

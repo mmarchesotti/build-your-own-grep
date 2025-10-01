@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mmarchesotti/build-your-own-grep/app/nfasimulator"
+	"github.com/mmarchesotti/build-your-own-grep/internal/nfasimulator"
 )
 
 func TestMatchLine(t *testing.T) {

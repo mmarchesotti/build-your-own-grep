@@ -3,9 +3,9 @@ package parser
 import (
 	"fmt"
 
-	"github.com/mmarchesotti/build-your-own-grep/app/ast"
-	"github.com/mmarchesotti/build-your-own-grep/app/lexer"
-	"github.com/mmarchesotti/build-your-own-grep/app/token"
+	"github.com/mmarchesotti/build-your-own-grep/internal/ast"
+	"github.com/mmarchesotti/build-your-own-grep/internal/lexer"
+	"github.com/mmarchesotti/build-your-own-grep/internal/token"
 )
 
 type Parser struct {
