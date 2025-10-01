@@ -83,7 +83,7 @@ func (p *CharacterSetMatcher) Match(r rune) (bool, error) {
 type WildcardMatcher struct{}
 
 func (w *WildcardMatcher) Match(r rune) (bool, error) {
-	return true, nil
+	return r != '\n', nil
 }
 
 type DigitMatcher struct{}
