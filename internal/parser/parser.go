@@ -9,14 +9,16 @@ import (
 )
 
 type Parser struct {
-	tokens   []token.Token
-	position int
+	tokens       []token.Token
+	position     int
+	captureCount int
 }
 
 func NewParser(tokens []token.Token) *Parser {
 	return &Parser{
-		tokens:   tokens,
-		position: 0,
+		tokens:       tokens,
+		position:     0,
+		captureCount: 0,
 	}
 }
 
@@ -99,6 +101,10 @@ func (p *Parser) parseAtom() (ast.ASTNode, error) {
 	switch t := p.currentToken().(type) {
 	case *token.GroupingOpener:
 		p.consumeToken()
+
+		p.captureCount++
+		currentIndex := p.captureCount
+
 		node, err := p.parseExpression()
 		if err != nil {
 			return nil, err
@@ -108,7 +114,11 @@ func (p *Parser) parseAtom() (ast.ASTNode, error) {
 			return nil, fmt.Errorf("unmatched group opener")
 		}
 		p.consumeToken()
-		return node, nil
+
+		return &ast.CaptureGroupNode{
+			Child: node,
+			Index: currentIndex,
+		}, nil
 	case *token.Literal:
 		p.consumeToken()
 		node := &ast.LiteralNode{
@@ -151,11 +161,15 @@ func (p *Parser) parseAtom() (ast.ASTNode, error) {
 	}
 }
 
-func Parse(inputPattern string) (ast.ASTNode, error) {
+func Parse(inputPattern string) (ast.ASTNode, int, error) {
 	tokens, err := lexer.Tokenize(inputPattern)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	parser := NewParser(tokens)
-	return parser.parseExpression()
+	node, err := parser.parseExpression()
+	if err != nil {
+		return nil, 0, err
+	}
+	return node, parser.captureCount, nil
 }

@@ -69,3 +69,9 @@ type StartAnchorNode struct {
 type EndAnchorNode struct {
 	baseASTNode
 }
+
+type CaptureGroupNode struct {
+	baseASTNode
+	Child ASTNode
+	Index int
+}

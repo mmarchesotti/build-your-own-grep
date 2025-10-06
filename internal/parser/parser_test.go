@@ -8,7 +8,6 @@ import (
 )
 
 // --- Test Helper Functions ---
-// These make the test cases much cleaner and easier to read.
 func lit(char rune) ast.ASTNode { return &ast.LiteralNode{Literal: char} }
 func alt(left, right ast.ASTNode) ast.ASTNode {
 	return &ast.AlternationNode{Left: left, Right: right}
@@ -23,63 +22,83 @@ func cs(pos bool, lits []rune) ast.ASTNode {
 	return &ast.CharacterSetNode{IsPositive: pos, Literals: lits}
 }
 
+func capg(index int, child ast.ASTNode) ast.ASTNode {
+	return &ast.CaptureGroupNode{Index: index, Child: child}
+}
+
 // --- Main Test Function ---
 
 func TestParse(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		expected ast.ASTNode
+		name          string
+		input         string
+		expected      ast.ASTNode
+		expectedCount int
 	}{
 		{
-			name:     "single literal",
-			input:    "a",
-			expected: lit('a'),
+			name:          "single literal",
+			input:         "a",
+			expected:      lit('a'),
+			expectedCount: 0,
 		},
 		{
-			name:     "simple concatenation",
-			input:    "ab",
-			expected: concat(lit('a'), lit('b')),
+			name:          "simple concatenation",
+			input:         "ab",
+			expected:      concat(lit('a'), lit('b')),
+			expectedCount: 0,
 		},
 		{
-			name:     "long concatenation (will fail until bug is fixed)",
-			input:    "abc",
-			expected: concat(concat(lit('a'), lit('b')), lit('c')),
+			name:          "long concatenation",
+			input:         "abc",
+			expected:      concat(concat(lit('a'), lit('b')), lit('c')),
+			expectedCount: 0,
 		},
 		{
-			name:     "simple alternation",
-			input:    "a|b",
-			expected: alt(lit('a'), lit('b')),
+			name:          "simple alternation",
+			input:         "a|b",
+			expected:      alt(lit('a'), lit('b')),
+			expectedCount: 0,
 		},
 		{
-			name:     "alternation and concatenation precedence",
-			input:    "ab|c",
-			expected: alt(concat(lit('a'), lit('b')), lit('c')),
+			name:          "alternation and concatenation precedence",
+			input:         "ab|c",
+			expected:      alt(concat(lit('a'), lit('b')), lit('c')),
+			expectedCount: 0,
 		},
 		{
-			name:     "parentheses for scope",
-			input:    "a(b|c)",
-			expected: concat(lit('a'), alt(lit('b'), lit('c'))),
+			name:  "parentheses for scope",
+			input: "a(b|c)",
+			expected: concat(
+				lit('a'),
+				capg(1, alt(lit('b'), lit('c'))),
+			),
+			expectedCount: 1,
 		},
 		{
-			name:     "simple kleene star",
-			input:    "a*",
-			expected: star(lit('a')),
+			name:          "simple kleene star",
+			input:         "a*",
+			expected:      star(lit('a')),
+			expectedCount: 0,
 		},
 		{
-			name:     "kleene star on a group",
-			input:    "(ab)*",
-			expected: star(concat(lit('a'), lit('b'))),
+			name:  "kleene star on a group",
+			input: "(ab)*",
+			expected: star(
+				capg(1, concat(lit('a'), lit('b'))),
+			),
+			expectedCount: 1,
 		},
 		{
-			name:     "all quantifiers",
-			input:    "a*b+c?",
-			expected: concat(concat(star(lit('a')), plus(lit('b'))), opt(lit('c'))),
+			name:          "all quantifiers",
+			input:         "a*b+c?",
+			expected:      concat(concat(star(lit('a')), plus(lit('b'))), opt(lit('c'))),
+			expectedCount: 0,
 		},
 		{
-			name:     "character set",
-			input:    "[abc]",
-			expected: cs(true, []rune{'a', 'b', 'c'}),
+			name:          "character set",
+			input:         "[abc]",
+			expected:      cs(true, []rune{'a', 'b', 'c'}),
+			expectedCount: 0,
 		},
 		{
 			name:  "complex expression",
@@ -87,19 +106,38 @@ func TestParse(t *testing.T) {
 			expected: concat(
 				concat(
 					lit('a'),
-					star(alt(lit('b'), lit('c'))),
+					star(capg(1, alt(lit('b'), lit('c')))),
 				),
 				lit('d'),
 			),
+			expectedCount: 1,
+		},
+		{
+			name:  "nested capture groups",
+			input: "a(b(c))d",
+			expected: concat(
+				concat(
+					lit('a'),
+					capg(1, concat(lit('b'), capg(2, lit('c')))),
+				),
+				lit('d'),
+			),
+			expectedCount: 2,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := Parse(tt.input)
+			actual, actualCount, err := Parse(tt.input)
 
 			if err != nil {
 				t.Fatalf("Parse() returned an unexpected error: %v", err)
+			}
+
+			if actualCount != tt.expectedCount {
+				t.Errorf("Parse() for input '%s' returned wrong capture count", tt.input)
+				t.Errorf("got:  %d", actualCount)
+				t.Errorf("want: %d", tt.expectedCount)
 			}
 
 			if !reflect.DeepEqual(actual, tt.expected) {

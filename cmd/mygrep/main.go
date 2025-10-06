@@ -125,9 +125,12 @@ func processLines(input io.Reader, pattern string) (bool, [][]byte, error) {
 		lineCopy := make([]byte, len(line))
 		copy(lineCopy, line)
 
-		ok, err := nfasimulator.Simulate(lineCopy, pattern)
+		ok, captures, err := nfasimulator.Simulate(lineCopy, pattern)
 		if err != nil {
 			return false, nil, fmt.Errorf("invalid pattern: %w", err)
+		}
+		for capture := range captures {
+			fmt.Println(capture)
 		}
 
 		if ok {

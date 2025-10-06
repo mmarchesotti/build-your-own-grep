@@ -46,3 +46,15 @@ type EndAnchorState struct {
 type AcceptingState struct {
 	BaseState
 }
+
+type StartCaptureState struct {
+	BaseState
+	Out   State
+	Index int
+}
+
+type EndCaptureState struct {
+	BaseState
+	Out   State
+	Index int
+}

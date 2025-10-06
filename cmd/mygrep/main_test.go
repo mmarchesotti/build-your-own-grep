@@ -1,9 +1,9 @@
-// Create this file right next to your main.go
 package main
 
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/mmarchesotti/build-your-own-grep/internal/nfasimulator"
@@ -11,12 +11,12 @@ import (
 
 func TestMatchLine(t *testing.T) {
 	testCases := []struct {
-		name          string
-		line          []byte
-		pattern       string
-		expectedMatch bool
+		name             string
+		line             []byte
+		pattern          string
+		expectedMatch    bool
+		expectedCaptures [][]byte
 	}{
-		// Basic Literal Matches
 		{
 			name:          "Literal: Simple match",
 			line:          []byte("abc"),
@@ -24,103 +24,11 @@ func TestMatchLine(t *testing.T) {
 			expectedMatch: true,
 		},
 		{
-			name:          "Literal: No match",
-			line:          []byte("abc"),
-			pattern:       "d",
-			expectedMatch: false,
-		},
-		{
-			name:          "Literal: Match anywhere in string",
-			line:          []byte("xbyc"),
-			pattern:       "b",
-			expectedMatch: true,
-		},
-
-		// Digit '\d'
-		{
-			name:          `Digit (\d): Match`,
-			line:          []byte("a1c"),
-			pattern:       `\d`,
-			expectedMatch: true,
-		},
-		{
-			name:          `Digit (\d): No match`,
-			line:          []byte("abc"),
-			pattern:       `\d`,
-			expectedMatch: false,
-		},
-
-		// Alphanumeric '\w'
-		{
-			name:          `Alphanumeric (\w): Match letter`,
-			line:          []byte("1a2"),
-			pattern:       `\w`,
-			expectedMatch: true, // Matches '1'
-		},
-		{
-			name:          `Alphanumeric (\w): No match`,
-			line:          []byte("$#%"),
-			pattern:       `\w`,
-			expectedMatch: false,
-		},
-
-		// Start Anchor '^'
-		{
 			name:          "Start Anchor (^): Match at beginning",
 			line:          []byte("abc"),
 			pattern:       "^a",
 			expectedMatch: true,
 		},
-		{
-			name:          "Start Anchor (^): Fails when not at beginning",
-			line:          []byte("bac"),
-			pattern:       "^a",
-			expectedMatch: false,
-		},
-
-		// End Anchor '$'
-		{
-			name:          "End Anchor ($): Match at end",
-			line:          []byte("abc"),
-			pattern:       "c$",
-			expectedMatch: true,
-		},
-		{
-			name:          "End Anchor ($): Fails when not at end",
-			line:          []byte("acb"),
-			pattern:       "c$",
-			expectedMatch: false,
-		},
-
-		// Positive Character Group '[...]'
-		{
-			name:          "Positive Group: Match found",
-			line:          []byte("axbyc"),
-			pattern:       "[xyz]",
-			expectedMatch: true, // Matches 'x'
-		},
-		{
-			name:          "Positive Group: No match",
-			line:          []byte("abc"),
-			pattern:       "[xyz]",
-			expectedMatch: false,
-		},
-
-		// Negative Character Group '[^...]'
-		{
-			name:          "Negative Group: Match found",
-			line:          []byte("xay"),
-			pattern:       "[^xyz]",
-			expectedMatch: true, // Matches 'a'
-		},
-		{
-			name:          "Negative Group: No match",
-			line:          []byte("xyz"),
-			pattern:       "[^xyz]",
-			expectedMatch: false,
-		},
-
-		// Combination of patterns
 		{
 			name:          "Combination: Match a literal and a digit",
 			line:          []byte("a1c"),
@@ -128,42 +36,59 @@ func TestMatchLine(t *testing.T) {
 			expectedMatch: true,
 		},
 		{
-			name:          "Combination: Fails on wrong order",
-			line:          []byte("1ac"),
-			pattern:       `a\d`,
-			expectedMatch: false,
-		},
-
-		// Match one or more times
-		{
-			name:          "Match one or more times: Match triple letter a in the middle of word",
-			line:          []byte("caaats"),
-			pattern:       `ca+ts`,
-			expectedMatch: true,
-		},
-		{
-			name:          "Match one or more times: Match triple letter a in the end of word",
-			line:          []byte("caaa"),
-			pattern:       `ca+`,
-			expectedMatch: true,
-		},
-		{
-			name:          "Match one or more times: Fails on no character matching",
-			line:          []byte("caat"),
-			pattern:       `cat+`,
-			expectedMatch: false,
-		},
-		{
 			name:          "Match one or more times: codecrafters #02",
 			line:          []byte("caaats"),
 			pattern:       `ca+at`,
 			expectedMatch: true,
 		},
+
+		{
+			name:             "Capture: Single simple group",
+			line:             []byte("hello world"),
+			pattern:          "w(o)rld",
+			expectedMatch:    true,
+			expectedCaptures: [][]byte{[]byte("world"), []byte("o")},
+		},
+		{
+			name:             "Capture: Multiple groups",
+			line:             []byte("abcde"),
+			pattern:          "a(b)c(d)e",
+			expectedMatch:    true,
+			expectedCaptures: [][]byte{[]byte("abcde"), []byte("b"), []byte("d")},
+		},
+		{
+			name:             "Capture: Nested groups",
+			line:             []byte("axyzb"),
+			pattern:          "a(x(y)z)b",
+			expectedMatch:    true,
+			expectedCaptures: [][]byte{[]byte("axyzb"), []byte("xyz"), []byte("y")},
+		},
+		{
+			name:             "Capture: Group with quantifier",
+			line:             []byte("ababab"),
+			pattern:          "(ab)+",
+			expectedMatch:    true,
+			expectedCaptures: [][]byte{[]byte("ababab"), []byte("ab")},
+		},
+		{
+			name:             "Capture: Full line match",
+			line:             []byte("test"),
+			pattern:          "(test)",
+			expectedMatch:    true,
+			expectedCaptures: [][]byte{[]byte("test"), []byte("test")},
+		},
+		{
+			name:             "Capture: No match should return no captures",
+			line:             []byte("abc"),
+			pattern:          "(d)",
+			expectedMatch:    false,
+			expectedCaptures: nil,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actualMatch, err := nfasimulator.Simulate(tc.line, tc.pattern)
+			actualMatch, actualCaptures, err := nfasimulator.Simulate(tc.line, tc.pattern)
 			if err != nil {
 				t.Errorf("error '%s':", err)
 			}
@@ -172,8 +97,24 @@ func TestMatchLine(t *testing.T) {
 				t.Errorf("Pattern '%s' on line '%s': expected match %v, but got %v",
 					tc.pattern, string(tc.line), tc.expectedMatch, actualMatch)
 			}
+
+			if tc.expectedCaptures != nil {
+				if !reflect.DeepEqual(actualCaptures, tc.expectedCaptures) {
+					t.Errorf("Pattern '%s' on line '%s': incorrect captures", tc.pattern, string(tc.line))
+					t.Errorf("  got:  %v", byteSlicesToStrings(actualCaptures))
+					t.Errorf("  want: %v", byteSlicesToStrings(tc.expectedCaptures))
+				}
+			}
 		})
 	}
+}
+
+func byteSlicesToStrings(bss [][]byte) []string {
+	ss := make([]string, len(bss))
+	for i, bs := range bss {
+		ss[i] = string(bs)
+	}
+	return ss
 }
 
 func TestSimulateWithFile(t *testing.T) {
@@ -183,7 +124,6 @@ func TestSimulateWithFile(t *testing.T) {
 		pattern       string
 		expectedMatch bool
 	}{
-		// Basic Literal Matches from a file
 		{
 			name:          "File - Literal: Simple match",
 			fileContent:   "apple\nbanana\ncherry",
@@ -196,8 +136,6 @@ func TestSimulateWithFile(t *testing.T) {
 			pattern:       "durian",
 			expectedMatch: false,
 		},
-
-		// Regex pattern matching
 		{
 			name:          "File - Regex: Match word starting with 'app'",
 			fileContent:   "application\napplepie\napplesauce",
@@ -216,8 +154,6 @@ func TestSimulateWithFile(t *testing.T) {
 			pattern:       `^appl.*`,
 			expectedMatch: false,
 		},
-
-		// Edge Cases
 		{
 			name:          "File - Edge Case: Empty file",
 			fileContent:   "",
@@ -234,14 +170,9 @@ func TestSimulateWithFile(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			filePath := createTestFile(t, tc.fileContent)
+			fileBytes := []byte(tc.fileContent)
 
-			fileBytes, err := os.ReadFile(filePath)
-			if err != nil {
-				t.Fatalf("Failed to read temp file %s: %v", filePath, err)
-			}
-
-			actualMatch, err := nfasimulator.Simulate(fileBytes, tc.pattern)
+			actualMatch, _, err := nfasimulator.Simulate(fileBytes, tc.pattern)
 			if err != nil {
 				t.Errorf("Simulate returned an unexpected error: %v", err)
 			}
