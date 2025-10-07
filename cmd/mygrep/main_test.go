@@ -19,35 +19,119 @@ func TestMatchLine(t *testing.T) {
 		expectedMatch bool
 	}{
 		// Basic Literal Matches
-		{name: "Literal: Simple match", line: []byte("abc"), pattern: "a", expectedMatch: true},
-		{name: "Literal: No match", line: []byte("abc"), pattern: "d", expectedMatch: false},
-		{name: "Literal: Match anywhere in string", line: []byte("xbyc"), pattern: "b", expectedMatch: true},
+		{
+			name: "Literal: Simple match",
+			line: []byte("abc"), pattern: "a",
+			expectedMatch: true,
+		},
+		{
+			name: "Literal: No match",
+			line: []byte("abc"), pattern: "d",
+			expectedMatch: false,
+		},
+		{
+			name: "Literal: Match anywhere in string",
+			line: []byte("xbyc"), pattern: "b",
+			expectedMatch: true,
+		},
 		// Digit '\d'
-		{name: `Digit (\d): Match`, line: []byte("a1c"), pattern: `\d`, expectedMatch: true},
-		{name: `Digit (\d): No match`, line: []byte("abc"), pattern: `\d`, expectedMatch: false},
+		{
+			name: `Digit (\d): Match`,
+			line: []byte("a1c"), pattern: `\d`,
+			expectedMatch: true,
+		},
+		{
+			name: `Digit (\d): No match`,
+			line: []byte("abc"), pattern: `\d`,
+			expectedMatch: false,
+		},
 		// Alphanumeric '\w'
-		{name: `Alphanumeric (\w): Match letter`, line: []byte("1a2"), pattern: `\w`, expectedMatch: true},
-		{name: `Alphanumeric (\w): No match`, line: []byte("$#%"), pattern: `\w`, expectedMatch: false},
+		{
+			name: `Alphanumeric (\w): Match letter`,
+			line: []byte("1a2"), pattern: `\w`,
+			expectedMatch: true,
+		},
+		{
+			name: `Alphanumeric (\w): No match`,
+			line: []byte("$#%"), pattern: `\w`,
+			expectedMatch: false,
+		},
 		// Start Anchor '^'
-		{name: "Start Anchor (^): Match at beginning", line: []byte("abc"), pattern: "^a", expectedMatch: true},
-		{name: "Start Anchor (^): Fails when not at beginning", line: []byte("bac"), pattern: "^a", expectedMatch: false},
+		{
+			name: "Start Anchor (^): Match at beginning",
+			line: []byte("abc"), pattern: "^a",
+			expectedMatch: true,
+		},
+		{
+			name: "Start Anchor (^): Fails when not at beginning",
+			line: []byte("bac"), pattern: "^a",
+			expectedMatch: false,
+		},
 		// End Anchor '$'
-		{name: "End Anchor ($): Match at end", line: []byte("abc"), pattern: "c$", expectedMatch: true},
-		{name: "End Anchor ($): Fails when not at end", line: []byte("acb"), pattern: "c$", expectedMatch: false},
+		{
+			name: "End Anchor ($): Match at end",
+			line: []byte("abc"), pattern: "c$",
+			expectedMatch: true,
+		},
+		{
+			name: "End Anchor ($): Fails when not at end",
+			line: []byte("acb"), pattern: "c$",
+			expectedMatch: false,
+		},
 		// Positive Character Group '[...]'
-		{name: "Positive Group: Match found", line: []byte("axbyc"), pattern: "[xyz]", expectedMatch: true},
-		{name: "Positive Group: No match", line: []byte("abc"), pattern: "[xyz]", expectedMatch: false},
+		{
+			name: "Positive Group: Match found",
+			line: []byte("axbyc"), pattern: "[xyz]",
+			expectedMatch: true,
+		},
+		{
+			name: "Positive Group: No match",
+			line: []byte("abc"), pattern: "[xyz]",
+			expectedMatch: false,
+		},
 		// Negative Character Group '[^...]'
-		{name: "Negative Group: Match found", line: []byte("xay"), pattern: "[^xyz]", expectedMatch: true},
-		{name: "Negative Group: No match", line: []byte("xyz"), pattern: "[^xyz]", expectedMatch: false},
+		{
+			name: "Negative Group: Match found",
+			line: []byte("xay"), pattern: "[^xyz]",
+			expectedMatch: true,
+		},
+		{
+			name: "Negative Group: No match",
+			line: []byte("xyz"), pattern: "[^xyz]",
+			expectedMatch: false,
+		},
 		// Combination of patterns
-		{name: "Combination: Match a literal and a digit", line: []byte("a1c"), pattern: `a\d`, expectedMatch: true},
-		{name: "Combination: Fails on wrong order", line: []byte("1ac"), pattern: `a\d`, expectedMatch: false},
+		{
+			name: "Combination: Match a literal and a digit",
+			line: []byte("a1c"), pattern: `a\d`,
+			expectedMatch: true,
+		},
+		{
+			name: "Combination: Fails on wrong order",
+			line: []byte("1ac"), pattern: `a\d`,
+			expectedMatch: false,
+		},
 		// Match one or more times
-		{name: "Match one or more times: Match triple letter a in the middle of word", line: []byte("caaats"), pattern: `ca+ts`, expectedMatch: true},
-		{name: "Match one or more times: Match triple letter a in the end of word", line: []byte("caaa"), pattern: `ca+`, expectedMatch: true},
-		{name: "Match one or more times: Fails on no character matching", line: []byte("caat"), pattern: `cat+`, expectedMatch: false},
-		{name: "Match one or more times: codecrafters #02", line: []byte("caaats"), pattern: `ca+at`, expectedMatch: true},
+		{
+			name: "Match one or more times: Match triple letter a in the middle of word",
+			line: []byte("caaats"), pattern: `ca+ts`,
+			expectedMatch: true,
+		},
+		{
+			name: "Match one or more times: Match triple letter a in the end of word",
+			line: []byte("caaa"), pattern: `ca+`,
+			expectedMatch: true,
+		},
+		{
+			name: "Match one or more times: Fails on no character matching",
+			line: []byte("caat"), pattern: `cat+`,
+			expectedMatch: false,
+		},
+		{
+			name: "Match one or more times: codecrafters #02",
+			line: []byte("caaats"), pattern: `ca+at`,
+			expectedMatch: true,
+		},
 	}
 
 	for _, tc := range basicTestCases {
@@ -71,28 +155,38 @@ func TestMatchLine(t *testing.T) {
 		line             []byte
 		pattern          string
 		expectedMatch    bool
-		expectedCaptures []int // Format: [start0, end0, start1, end1, ...]
+		expectedCaptures []nfasimulator.Capture
 	}{
 		{
-			name:             "Captures: Single simple group",
-			line:             []byte("hello world"),
-			pattern:          "w(o)rld",
-			expectedMatch:    true,
-			expectedCaptures: []int{6, 11, 7, 8}, // Match "world" (6-11), captured "o" (7-8)
+			name:          "Captures: Single simple group",
+			line:          []byte("hello world"),
+			pattern:       "w(o)rld",
+			expectedMatch: true,
+			expectedCaptures: []nfasimulator.Capture{
+				{Start: 6, End: 11}, // "world"
+				{Start: 7, End: 8},  // "o"
+			},
 		},
 		{
-			name:             "Captures: Full string match",
-			line:             []byte("abc"),
-			pattern:          "(abc)",
-			expectedMatch:    true,
-			expectedCaptures: []int{0, 3, 0, 3},
+			name:          "Captures: Full string match",
+			line:          []byte("abc"),
+			pattern:       "(abc)",
+			expectedMatch: true,
+			expectedCaptures: []nfasimulator.Capture{
+				{Start: 0, End: 3}, // "abc"
+				{Start: 0, End: 3}, // "abc"
+			},
 		},
 		{
-			name:             "Captures: Nested groups",
-			line:             []byte("axbyc"),
-			pattern:          "a(x(b)y)c",
-			expectedMatch:    true,
-			expectedCaptures: []int{0, 5, 1, 4, 2, 3}, // "axbyc", "xby", "b"
+			name:          "Captures: Nested groups",
+			line:          []byte("axbyc"),
+			pattern:       "a(x(b)y)c",
+			expectedMatch: true,
+			expectedCaptures: []nfasimulator.Capture{
+				{Start: 0, End: 5}, // "axbyc"
+				{Start: 1, End: 4}, // "xby"
+				{Start: 2, End: 3}, // "b"
+			},
 		},
 		{
 			name:             "Captures: No match, no captures",
@@ -102,18 +196,24 @@ func TestMatchLine(t *testing.T) {
 			expectedCaptures: nil,
 		},
 		{
-			name:             "Captures: Plus quantifier",
-			line:             []byte("abbbc"),
-			pattern:          "a(b+)c",
-			expectedMatch:    true,
-			expectedCaptures: []int{0, 5, 1, 4}, // "abbbc", "bbb"
+			name:          "Captures: Plus quantifier",
+			line:          []byte("abbbc"),
+			pattern:       "a(b+)c",
+			expectedMatch: true,
+			expectedCaptures: []nfasimulator.Capture{
+				{Start: 0, End: 5}, // "abbbc"
+				{Start: 1, End: 4}, // "bbb"
+			},
 		},
 		{
-			name:             "Captures: Group with quantifier",
-			line:             []byte("ababab"),
-			pattern:          "(ab)+",
-			expectedMatch:    true,
-			expectedCaptures: []int{0, 6, 4, 6}, // "ababab", "ab"
+			name:          "Captures: Group with quantifier",
+			line:          []byte("ababab"),
+			pattern:       "(ab)+",
+			expectedMatch: true,
+			expectedCaptures: []nfasimulator.Capture{
+				{Start: 0, End: 6}, // "ababab"
+				{Start: 4, End: 6}, // "ab"
+			},
 		},
 	}
 
@@ -146,15 +246,50 @@ func TestSimulateWithFile(t *testing.T) {
 		expectedMatch bool
 	}{
 		// Basic Literal Matches from a file
-		{name: "File - Literal: Simple match", fileContent: "apple\nbanana\ncherry", pattern: "banana", expectedMatch: true},
-		{name: "File - Literal: No match", fileContent: "apple\nbanana\ncherry", pattern: "durian", expectedMatch: false},
+		{
+			name:          "File - Literal: Simple match",
+			fileContent:   "apple\nbanana\ncherry",
+			pattern:       "banana",
+			expectedMatch: true,
+		},
+		{
+			name:          "File - Literal: No match",
+			fileContent:   "apple\nbanana\ncherry",
+			pattern:       "durian",
+			expectedMatch: false,
+		},
 		// Regex pattern matching
-		{name: "File - Regex: Match word starting with 'app'", fileContent: "application\napplepie\napplesauce", pattern: `^appl.*`, expectedMatch: true},
-		{name: "File - Regex: Match lines with digits", fileContent: "line one\nline 2\nline three", pattern: `\d`, expectedMatch: true},
-		{name: "File - Regex: Fails when not at the start", fileContent: "An application\nAn applepie", pattern: `^appl.*`, expectedMatch: false},
+		{
+			name:          "File - Regex: Match word starting with 'app'",
+			fileContent:   "application\napplepie\napplesauce",
+			pattern:       `^appl.*`,
+			expectedMatch: true,
+		},
+		{
+			name:          "File - Regex: Match lines with digits",
+			fileContent:   "line one\nline 2\nline three",
+			pattern:       `\d`,
+			expectedMatch: true,
+		},
+		{
+			name:          "File - Regex: Fails when not at the start",
+			fileContent:   "An application\nAn applepie",
+			pattern:       `^appl.*`,
+			expectedMatch: false,
+		},
 		// Edge Cases
-		{name: "File - Edge Case: Empty file", fileContent: "", pattern: "a", expectedMatch: false},
-		{name: "File - Edge Case: Pattern matches entire file content", fileContent: "supercalifragilisticexpialidocious", pattern: ".*", expectedMatch: true},
+		{
+			name:          "File - Edge Case: Empty file",
+			fileContent:   "",
+			pattern:       "a",
+			expectedMatch: false,
+		},
+		{
+			name:          "File - Edge Case: Pattern matches entire file content",
+			fileContent:   "supercalifragilisticexpialidocious",
+			pattern:       ".*",
+			expectedMatch: true,
+		},
 	}
 
 	for _, tc := range testCases {
