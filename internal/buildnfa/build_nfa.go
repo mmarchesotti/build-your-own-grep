@@ -23,6 +23,27 @@ func newMatcherFragment(m matcher.Matcher) nfa.Fragment {
 
 func processNode(n ast.ASTNode) (nfa.Fragment, error) {
 	switch node := n.(type) {
+	case *ast.CaptureGroupNode:
+		subfragment, err := processNode(node.Child)
+		if err != nil {
+			return nfa.Fragment{}, err
+		}
+
+		startState := &nfa.CaptureStartState{
+			GroupIndex: node.GroupIndex,
+			Out:        subfragment.Start,
+		}
+		endState := &nfa.CaptureEndState{
+			GroupIndex: node.GroupIndex,
+			Out:        nil,
+		}
+
+		nfa.SetStates(subfragment.Out, endState)
+
+		return nfa.Fragment{
+			Start: startState,
+			Out:   []*nfa.State{&endState.Out},
+		}, nil
 	case *ast.AlternationNode:
 		subfragment1, err1 := processNode(node.Left)
 		if err1 != nil {
@@ -149,19 +170,34 @@ func processNode(n ast.ASTNode) (nfa.Fragment, error) {
 	}
 }
 
-func Build(inputPattern string) (nfa.Fragment, error) {
-	tree, parseErr := parser.Parse(inputPattern)
+func Build(inputPattern string) (nfa.Fragment, int, error) {
+	tree, captureCount, parseErr := parser.Parse(inputPattern)
 	if parseErr != nil {
-		return nfa.Fragment{}, parseErr
+		return nfa.Fragment{}, 0, parseErr
 	}
 
-	f, processErr := processNode(tree)
+	mainFrag, processErr := processNode(tree)
 	if processErr != nil {
-		return nfa.Fragment{}, processErr
+		return nfa.Fragment{}, 0, processErr
 	}
+
+	startState := &nfa.CaptureStartState{
+		GroupIndex: 0,
+		Out:        mainFrag.Start,
+	}
+	endState := &nfa.CaptureEndState{
+		GroupIndex: 0,
+		Out:        nil,
+	}
+	nfa.SetStates(mainFrag.Out, endState)
 
 	acceptingState := &nfa.AcceptingState{}
-	nfa.SetStates(f.Out, acceptingState)
-	f.Out = []*nfa.State{}
-	return f, nil
+	nfa.SetStates([]*nfa.State{&endState.Out}, acceptingState)
+
+	finalFragment := nfa.Fragment{
+		Start: startState,
+		Out:   []*nfa.State{},
+	}
+
+	return finalFragment, captureCount, nil
 }

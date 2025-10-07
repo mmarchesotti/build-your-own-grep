@@ -4,166 +4,56 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/mmarchesotti/build-your-own-grep/internal/nfasimulator"
 )
 
 func TestMatchLine(t *testing.T) {
-	testCases := []struct {
+	// --- Existing test cases, now just checking for match/no-match ---
+	basicTestCases := []struct {
 		name          string
 		line          []byte
 		pattern       string
 		expectedMatch bool
 	}{
 		// Basic Literal Matches
-		{
-			name:          "Literal: Simple match",
-			line:          []byte("abc"),
-			pattern:       "a",
-			expectedMatch: true,
-		},
-		{
-			name:          "Literal: No match",
-			line:          []byte("abc"),
-			pattern:       "d",
-			expectedMatch: false,
-		},
-		{
-			name:          "Literal: Match anywhere in string",
-			line:          []byte("xbyc"),
-			pattern:       "b",
-			expectedMatch: true,
-		},
-
+		{name: "Literal: Simple match", line: []byte("abc"), pattern: "a", expectedMatch: true},
+		{name: "Literal: No match", line: []byte("abc"), pattern: "d", expectedMatch: false},
+		{name: "Literal: Match anywhere in string", line: []byte("xbyc"), pattern: "b", expectedMatch: true},
 		// Digit '\d'
-		{
-			name:          `Digit (\d): Match`,
-			line:          []byte("a1c"),
-			pattern:       `\d`,
-			expectedMatch: true,
-		},
-		{
-			name:          `Digit (\d): No match`,
-			line:          []byte("abc"),
-			pattern:       `\d`,
-			expectedMatch: false,
-		},
-
+		{name: `Digit (\d): Match`, line: []byte("a1c"), pattern: `\d`, expectedMatch: true},
+		{name: `Digit (\d): No match`, line: []byte("abc"), pattern: `\d`, expectedMatch: false},
 		// Alphanumeric '\w'
-		{
-			name:          `Alphanumeric (\w): Match letter`,
-			line:          []byte("1a2"),
-			pattern:       `\w`,
-			expectedMatch: true, // Matches '1'
-		},
-		{
-			name:          `Alphanumeric (\w): No match`,
-			line:          []byte("$#%"),
-			pattern:       `\w`,
-			expectedMatch: false,
-		},
-
+		{name: `Alphanumeric (\w): Match letter`, line: []byte("1a2"), pattern: `\w`, expectedMatch: true},
+		{name: `Alphanumeric (\w): No match`, line: []byte("$#%"), pattern: `\w`, expectedMatch: false},
 		// Start Anchor '^'
-		{
-			name:          "Start Anchor (^): Match at beginning",
-			line:          []byte("abc"),
-			pattern:       "^a",
-			expectedMatch: true,
-		},
-		{
-			name:          "Start Anchor (^): Fails when not at beginning",
-			line:          []byte("bac"),
-			pattern:       "^a",
-			expectedMatch: false,
-		},
-
+		{name: "Start Anchor (^): Match at beginning", line: []byte("abc"), pattern: "^a", expectedMatch: true},
+		{name: "Start Anchor (^): Fails when not at beginning", line: []byte("bac"), pattern: "^a", expectedMatch: false},
 		// End Anchor '$'
-		{
-			name:          "End Anchor ($): Match at end",
-			line:          []byte("abc"),
-			pattern:       "c$",
-			expectedMatch: true,
-		},
-		{
-			name:          "End Anchor ($): Fails when not at end",
-			line:          []byte("acb"),
-			pattern:       "c$",
-			expectedMatch: false,
-		},
-
+		{name: "End Anchor ($): Match at end", line: []byte("abc"), pattern: "c$", expectedMatch: true},
+		{name: "End Anchor ($): Fails when not at end", line: []byte("acb"), pattern: "c$", expectedMatch: false},
 		// Positive Character Group '[...]'
-		{
-			name:          "Positive Group: Match found",
-			line:          []byte("axbyc"),
-			pattern:       "[xyz]",
-			expectedMatch: true, // Matches 'x'
-		},
-		{
-			name:          "Positive Group: No match",
-			line:          []byte("abc"),
-			pattern:       "[xyz]",
-			expectedMatch: false,
-		},
-
+		{name: "Positive Group: Match found", line: []byte("axbyc"), pattern: "[xyz]", expectedMatch: true},
+		{name: "Positive Group: No match", line: []byte("abc"), pattern: "[xyz]", expectedMatch: false},
 		// Negative Character Group '[^...]'
-		{
-			name:          "Negative Group: Match found",
-			line:          []byte("xay"),
-			pattern:       "[^xyz]",
-			expectedMatch: true, // Matches 'a'
-		},
-		{
-			name:          "Negative Group: No match",
-			line:          []byte("xyz"),
-			pattern:       "[^xyz]",
-			expectedMatch: false,
-		},
-
+		{name: "Negative Group: Match found", line: []byte("xay"), pattern: "[^xyz]", expectedMatch: true},
+		{name: "Negative Group: No match", line: []byte("xyz"), pattern: "[^xyz]", expectedMatch: false},
 		// Combination of patterns
-		{
-			name:          "Combination: Match a literal and a digit",
-			line:          []byte("a1c"),
-			pattern:       `a\d`,
-			expectedMatch: true,
-		},
-		{
-			name:          "Combination: Fails on wrong order",
-			line:          []byte("1ac"),
-			pattern:       `a\d`,
-			expectedMatch: false,
-		},
-
+		{name: "Combination: Match a literal and a digit", line: []byte("a1c"), pattern: `a\d`, expectedMatch: true},
+		{name: "Combination: Fails on wrong order", line: []byte("1ac"), pattern: `a\d`, expectedMatch: false},
 		// Match one or more times
-		{
-			name:          "Match one or more times: Match triple letter a in the middle of word",
-			line:          []byte("caaats"),
-			pattern:       `ca+ts`,
-			expectedMatch: true,
-		},
-		{
-			name:          "Match one or more times: Match triple letter a in the end of word",
-			line:          []byte("caaa"),
-			pattern:       `ca+`,
-			expectedMatch: true,
-		},
-		{
-			name:          "Match one or more times: Fails on no character matching",
-			line:          []byte("caat"),
-			pattern:       `cat+`,
-			expectedMatch: false,
-		},
-		{
-			name:          "Match one or more times: codecrafters #02",
-			line:          []byte("caaats"),
-			pattern:       `ca+at`,
-			expectedMatch: true,
-		},
+		{name: "Match one or more times: Match triple letter a in the middle of word", line: []byte("caaats"), pattern: `ca+ts`, expectedMatch: true},
+		{name: "Match one or more times: Match triple letter a in the end of word", line: []byte("caaa"), pattern: `ca+`, expectedMatch: true},
+		{name: "Match one or more times: Fails on no character matching", line: []byte("caat"), pattern: `cat+`, expectedMatch: false},
+		{name: "Match one or more times: codecrafters #02", line: []byte("caaats"), pattern: `ca+at`, expectedMatch: true},
 	}
 
-	for _, tc := range testCases {
+	for _, tc := range basicTestCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actualMatch, err := nfasimulator.Simulate(tc.line, tc.pattern)
+			// Updated call to Simulate, ignoring the captures slice
+			actualMatch, _, err := nfasimulator.Simulate(tc.line, tc.pattern)
 			if err != nil {
 				t.Errorf("error '%s':", err)
 			}
@@ -171,6 +61,78 @@ func TestMatchLine(t *testing.T) {
 			if actualMatch != tc.expectedMatch {
 				t.Errorf("Pattern '%s' on line '%s': expected match %v, but got %v",
 					tc.pattern, string(tc.line), tc.expectedMatch, actualMatch)
+			}
+		})
+	}
+
+	// --- New test cases specifically for validating captures ---
+	captureTestCases := []struct {
+		name             string
+		line             []byte
+		pattern          string
+		expectedMatch    bool
+		expectedCaptures []int // Format: [start0, end0, start1, end1, ...]
+	}{
+		{
+			name:             "Captures: Single simple group",
+			line:             []byte("hello world"),
+			pattern:          "w(o)rld",
+			expectedMatch:    true,
+			expectedCaptures: []int{6, 11, 7, 8}, // Match "world" (6-11), captured "o" (7-8)
+		},
+		{
+			name:             "Captures: Full string match",
+			line:             []byte("abc"),
+			pattern:          "(abc)",
+			expectedMatch:    true,
+			expectedCaptures: []int{0, 3, 0, 3},
+		},
+		{
+			name:             "Captures: Nested groups",
+			line:             []byte("axbyc"),
+			pattern:          "a(x(b)y)c",
+			expectedMatch:    true,
+			expectedCaptures: []int{0, 5, 1, 4, 2, 3}, // "axbyc", "xby", "b"
+		},
+		{
+			name:             "Captures: No match, no captures",
+			line:             []byte("zzzzz"),
+			pattern:          "(a)",
+			expectedMatch:    false,
+			expectedCaptures: nil,
+		},
+		{
+			name:             "Captures: Plus quantifier",
+			line:             []byte("abbbc"),
+			pattern:          "a(b+)c",
+			expectedMatch:    true,
+			expectedCaptures: []int{0, 5, 1, 4}, // "abbbc", "bbb"
+		},
+		{
+			name:             "Captures: Group with quantifier",
+			line:             []byte("ababab"),
+			pattern:          "(ab)+",
+			expectedMatch:    true,
+			expectedCaptures: []int{0, 6, 4, 6}, // "ababab", "ab"
+		},
+	}
+
+	for _, tc := range captureTestCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualMatch, actualCaptures, err := nfasimulator.Simulate(tc.line, tc.pattern)
+			if err != nil {
+				t.Errorf("error '%s':", err)
+			}
+
+			if actualMatch != tc.expectedMatch {
+				t.Errorf("Pattern '%s' on line '%s': expected match %v, but got %v",
+					tc.pattern, string(tc.line), tc.expectedMatch, actualMatch)
+			}
+
+			if !reflect.DeepEqual(actualCaptures, tc.expectedCaptures) {
+				t.Errorf("Pattern '%s' on line '%s': incorrect captures", tc.pattern, string(tc.line))
+				t.Errorf("  got: %v", actualCaptures)
+				t.Errorf(" want: %v", tc.expectedCaptures)
 			}
 		})
 	}
@@ -184,56 +146,23 @@ func TestSimulateWithFile(t *testing.T) {
 		expectedMatch bool
 	}{
 		// Basic Literal Matches from a file
-		{
-			name:          "File - Literal: Simple match",
-			fileContent:   "apple\nbanana\ncherry",
-			pattern:       "banana",
-			expectedMatch: true,
-		},
-		{
-			name:          "File - Literal: No match",
-			fileContent:   "apple\nbanana\ncherry",
-			pattern:       "durian",
-			expectedMatch: false,
-		},
-
+		{name: "File - Literal: Simple match", fileContent: "apple\nbanana\ncherry", pattern: "banana", expectedMatch: true},
+		{name: "File - Literal: No match", fileContent: "apple\nbanana\ncherry", pattern: "durian", expectedMatch: false},
 		// Regex pattern matching
-		{
-			name:          "File - Regex: Match word starting with 'app'",
-			fileContent:   "application\napplepie\napplesauce",
-			pattern:       `^appl.*`,
-			expectedMatch: true,
-		},
-		{
-			name:          "File - Regex: Match lines with digits",
-			fileContent:   "line one\nline 2\nline three",
-			pattern:       `\d`,
-			expectedMatch: true,
-		},
-		{
-			name:          "File - Regex: Fails when not at the start",
-			fileContent:   "An application\nAn applepie",
-			pattern:       `^appl.*`,
-			expectedMatch: false,
-		},
-
+		{name: "File - Regex: Match word starting with 'app'", fileContent: "application\napplepie\napplesauce", pattern: `^appl.*`, expectedMatch: true},
+		{name: "File - Regex: Match lines with digits", fileContent: "line one\nline 2\nline three", pattern: `\d`, expectedMatch: true},
+		{name: "File - Regex: Fails when not at the start", fileContent: "An application\nAn applepie", pattern: `^appl.*`, expectedMatch: false},
 		// Edge Cases
-		{
-			name:          "File - Edge Case: Empty file",
-			fileContent:   "",
-			pattern:       "a",
-			expectedMatch: false,
-		},
-		{
-			name:          "File - Edge Case: Pattern matches entire file content",
-			fileContent:   "supercalifragilisticexpialidocious",
-			pattern:       ".*",
-			expectedMatch: true,
-		},
+		{name: "File - Edge Case: Empty file", fileContent: "", pattern: "a", expectedMatch: false},
+		{name: "File - Edge Case: Pattern matches entire file content", fileContent: "supercalifragilisticexpialidocious", pattern: ".*", expectedMatch: true},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			// This test function reads the whole file into a byte slice,
+			// so it doesn't correctly test line-by-line matching.
+			// However, we can adapt the Simulate call.
+			// A true grep would iterate line by line.
 			filePath := createTestFile(t, tc.fileContent)
 
 			fileBytes, err := os.ReadFile(filePath)
@@ -241,7 +170,9 @@ func TestSimulateWithFile(t *testing.T) {
 				t.Fatalf("Failed to read temp file %s: %v", filePath, err)
 			}
 
-			actualMatch, err := nfasimulator.Simulate(fileBytes, tc.pattern)
+			// NOTE: This tests the pattern against the entire file content at once.
+			// Updated call to Simulate, ignoring the captures slice
+			actualMatch, _, err := nfasimulator.Simulate(fileBytes, tc.pattern)
 			if err != nil {
 				t.Errorf("Simulate returned an unexpected error: %v", err)
 			}

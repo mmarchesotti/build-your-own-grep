@@ -33,6 +33,18 @@ type MatcherState struct {
 	Matcher matcher.Matcher
 }
 
+type CaptureStartState struct {
+	BaseState
+	Out        State
+	GroupIndex int
+}
+
+type CaptureEndState struct {
+	BaseState
+	Out        State
+	GroupIndex int
+}
+
 type StartAnchorState struct {
 	BaseState
 	Out State

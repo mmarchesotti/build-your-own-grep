@@ -10,6 +10,12 @@ type baseASTNode struct{}
 
 func (n *baseASTNode) isASTNode() {}
 
+type CaptureGroupNode struct {
+	baseASTNode
+	Child      ASTNode
+	GroupIndex int
+}
+
 type AlternationNode struct {
 	baseASTNode
 	Left  ASTNode
