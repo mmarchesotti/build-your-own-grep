@@ -2,12 +2,14 @@ name: Go Test
 
 on:
   push:
-    branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
 
 jobs:
   test:
+    if: >-
+      (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) ||
+      (github.event_name == 'pull_request' && github.base_ref == github.event.repository.default_branch)
+
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
