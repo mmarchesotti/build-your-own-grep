@@ -39,31 +39,31 @@ func TestParse(t *testing.T) {
 			name:          "single literal",
 			input:         "a",
 			expected:      lit('a'),
-			expectedCount: 0,
+			expectedCount: 1,
 		},
 		{
 			name:          "simple concatenation",
 			input:         "ab",
 			expected:      concat(lit('a'), lit('b')),
-			expectedCount: 0,
+			expectedCount: 1,
 		},
 		{
 			name:          "long concatenation",
 			input:         "abc",
 			expected:      concat(concat(lit('a'), lit('b')), lit('c')),
-			expectedCount: 0,
+			expectedCount: 1,
 		},
 		{
 			name:          "simple alternation",
 			input:         "a|b",
 			expected:      alt(lit('a'), lit('b')),
-			expectedCount: 0,
+			expectedCount: 1,
 		},
 		{
 			name:          "alternation and concatenation precedence",
 			input:         "ab|c",
 			expected:      alt(concat(lit('a'), lit('b')), lit('c')),
-			expectedCount: 0,
+			expectedCount: 1,
 		},
 		{
 			name:  "parentheses for scope",
@@ -72,13 +72,13 @@ func TestParse(t *testing.T) {
 				lit('a'),
 				capg(1, alt(lit('b'), lit('c'))),
 			),
-			expectedCount: 1,
+			expectedCount: 2,
 		},
 		{
 			name:          "simple kleene star",
 			input:         "a*",
 			expected:      star(lit('a')),
-			expectedCount: 0,
+			expectedCount: 1,
 		},
 		{
 			name:  "kleene star on a group",
@@ -86,19 +86,19 @@ func TestParse(t *testing.T) {
 			expected: star(
 				capg(1, concat(lit('a'), lit('b'))),
 			),
-			expectedCount: 1,
+			expectedCount: 2,
 		},
 		{
 			name:          "all quantifiers",
 			input:         "a*b+c?",
 			expected:      concat(concat(star(lit('a')), plus(lit('b'))), opt(lit('c'))),
-			expectedCount: 0,
+			expectedCount: 1,
 		},
 		{
 			name:          "character set",
 			input:         "[abc]",
 			expected:      cs(true, []rune{'a', 'b', 'c'}),
-			expectedCount: 0,
+			expectedCount: 1,
 		},
 		{
 			name:  "complex expression",
@@ -110,7 +110,7 @@ func TestParse(t *testing.T) {
 				),
 				lit('d'),
 			),
-			expectedCount: 1,
+			expectedCount: 2,
 		},
 		{
 			name:  "nested capture groups",
@@ -122,7 +122,7 @@ func TestParse(t *testing.T) {
 				),
 				lit('d'),
 			),
-			expectedCount: 2,
+			expectedCount: 3,
 		},
 	}
 
