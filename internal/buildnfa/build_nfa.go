@@ -144,40 +144,24 @@ func processNode(n ast.ASTNode) (nfa.Fragment, error) {
 			Out:   []*nfa.State{&s.Out},
 		}
 		return frag, nil
-	case *ast.CaptureGroupNode:
-		subfragment, err := processNode(node.Child)
-		if err != nil {
-			return nfa.Fragment{}, err
-		}
-
-		startCapture := &nfa.StartCaptureState{Index: node.Index, Out: subfragment.Start}
-		endCapture := &nfa.EndCaptureState{Index: node.Index}
-
-		nfa.SetStates(subfragment.Out, endCapture)
-
-		frag := nfa.Fragment{
-			Start: startCapture,
-			Out:   []*nfa.State{&endCapture.Out},
-		}
-		return frag, nil
 	default:
 		return nfa.Fragment{}, fmt.Errorf("unexpected node type %T", node)
 	}
 }
 
-func Build(inputPattern string) (nfa.Fragment, int, error) {
-	tree, captureCount, parseErr := parser.Parse(inputPattern)
+func Build(inputPattern string) (nfa.Fragment, error) {
+	tree, parseErr := parser.Parse(inputPattern)
 	if parseErr != nil {
-		return nfa.Fragment{}, 0, parseErr
+		return nfa.Fragment{}, parseErr
 	}
 
 	f, processErr := processNode(tree)
 	if processErr != nil {
-		return nfa.Fragment{}, 0, processErr
+		return nfa.Fragment{}, processErr
 	}
 
 	acceptingState := &nfa.AcceptingState{}
 	nfa.SetStates(f.Out, acceptingState)
 	f.Out = []*nfa.State{}
-	return f, captureCount, nil
+	return f, nil
 }
