@@ -10,7 +10,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mmarchesotti/build-your-own-grep/internal/buildnfa"
+	"github.com/mmarchesotti/build-your-own-grep/internal/lexer"
 	"github.com/mmarchesotti/build-your-own-grep/internal/nfasimulator"
+	"github.com/mmarchesotti/build-your-own-grep/internal/parser"
 )
 
 const usage = `Usage: mygrep [options] <pattern> [path...]
@@ -125,9 +128,9 @@ func processLines(input io.Reader, pattern string) (bool, [][]byte, error) {
 		lineCopy := make([]byte, len(line))
 		copy(lineCopy, line)
 
-		ok, _, err := nfasimulator.Simulate(lineCopy, pattern)
+		ok, err := matchLine(lineCopy, pattern)
 		if err != nil {
-			return false, nil, fmt.Errorf("invalid pattern: %w", err)
+			return false, nil, err
 		}
 
 		if ok {
@@ -141,4 +144,30 @@ func processLines(input io.Reader, pattern string) (bool, [][]byte, error) {
 	}
 
 	return anyMatchFound, matchedLines, nil
+}
+
+func matchLine(lineCopy []byte, pattern string) (bool, error) {
+	tokens, tokenizeErr := lexer.Tokenize(pattern)
+	if tokenizeErr != nil {
+		return false, tokenizeErr
+	}
+
+	tree, captureCount, parseErr := parser.Parse(tokens)
+	if parseErr != nil {
+		return false, parseErr
+	}
+
+	fragment, buildErr := buildnfa.Build(tree)
+	if buildErr != nil {
+		return false, buildErr
+	}
+
+	captures, simulationErr := nfasimulator.Simulate(lineCopy, fragment, captureCount)
+	if simulationErr != nil {
+		return false, fmt.Errorf("invalid pattern: %w", simulationErr)
+	}
+
+	_, hasMatch := <-captures
+
+	return hasMatch, nil
 }

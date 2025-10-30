@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/mmarchesotti/build-your-own-grep/internal/ast"
+	"github.com/mmarchesotti/build-your-own-grep/internal/lexer"
 )
 
 // --- Test Helper Functions ---
@@ -128,10 +129,14 @@ func TestParse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, actualCount, err := Parse(tt.input)
+			tokens, tokenizeErr := lexer.Tokenize(tt.input)
+			if tokenizeErr != nil {
+				t.Fatalf("Tokenize() returned an unexpected error: %v", tokenizeErr)
+			}
 
-			if err != nil {
-				t.Fatalf("Parse() returned an unexpected error: %v", err)
+			actual, actualCount, parseErr := Parse(tokens)
+			if parseErr != nil {
+				t.Fatalf("Parse() returned an unexpected error: %v", parseErr)
 			}
 
 			if actualCount != tt.expectedCount {

@@ -81,14 +81,6 @@ func (token *baseToken) getType() string {
 	return string(token.pType)
 }
 
-// OPERATORS
-type Concatenation struct{ baseToken }
-type KleeneClosure struct{ baseToken }
-type PositiveClosure struct{ baseToken }
-type OptionalQuantifier struct{ baseToken }
-type Alternation struct{ baseToken }
-
-// OPERANDS
 type Literal struct {
 	baseToken
 	Literal rune
@@ -107,3 +99,14 @@ type EndAnchor struct{ baseToken }
 type Wildcard struct{ baseToken }
 type GroupingOpener struct{ baseToken }
 type GroupingCloser struct{ baseToken }
+
+type Concatenation struct{ baseToken }
+type KleeneClosure struct{ baseToken }
+type PositiveClosure struct{ baseToken }
+type OptionalQuantifier struct{ baseToken }
+type Alternation struct{ baseToken }
+
+type BackReference struct {
+	baseToken
+	GroupIndex int
+}

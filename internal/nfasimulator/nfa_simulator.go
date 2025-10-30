@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	"github.com/mmarchesotti/build-your-own-grep/internal/buildnfa"
 	"github.com/mmarchesotti/build-your-own-grep/internal/nfa"
 )
 
@@ -35,25 +34,36 @@ type undoEntry struct {
 	oldValue     int
 }
 
-func Simulate(line []byte, inputPattern string) (bool, []Capture, error) {
-	fragment, captureCount, err := buildnfa.Build(inputPattern)
-	if err != nil {
-		return false, nil, err
-	}
+func Simulate(line []byte, fragment nfa.Fragment, captureCount int) (<-chan Capture, error) {
+	out := make(chan []Capture)
 
-	for i := 0; i <= len(line); i++ {
-		captures, found := findMatchAt(fragment.Start, line, i, captureCount)
-		if found {
-			return true, captures, nil
+	go func() {
+		defer close(out)
+
+		searchIndex := 0
+		for searchIndex <= len(line) {
+			captures, found := findMatchAt(fragment.Start, line, searchIndex, captureCount)
+
+			if found {
+				out <- MatchResult{Captures: captures}
+
+				endOfMatch := captures[1]
+				if endOfMatch == searchIndex {
+					searchIndex++
+				} else {
+					searchIndex = endOfMatch
+				}
+			} else {
+				searchIndex++
+			}
 		}
-		if i == len(line) {
-			break
-		}
-	}
-	return false, nil, nil
+	}()
+
+	return out, nil
+
 }
 
-func findMatchAt(startState nfa.State, line []byte, startIndex int, captureCount int) ([]Capture, bool) {
+func findMatchAt(startState nfa.State, line []byte, startIndex int, captureCount int) (chan <- []Capture, bool) {
 	stack := []task{}
 
 	initialCaptures := make([]Capture, captureCount)
@@ -98,7 +108,7 @@ func findMatchAt(startState nfa.State, line []byte, startIndex int, captureCount
 		currentState := currentTask.thread.state
 		switch st := currentState.(type) {
 		case *nfa.AcceptingState:
-			return currentTask.thread.captures, true
+			out <- currentTask.thread.captures, true
 		case *nfa.MatcherState:
 			if currentTask.thread.lineIndex < len(line) {
 				r, size := utf8.DecodeRune(line[currentTask.thread.lineIndex:])

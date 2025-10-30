@@ -137,7 +137,7 @@ func TestMatchLine(t *testing.T) {
 	for _, tc := range basicTestCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Updated call to Simulate, ignoring the captures slice
-			actualMatch, _, err := nfasimulator.Simulate(tc.line, tc.pattern)
+			actualMatch, err := nfasimulator.Simulate(tc.line, tc.pattern)
 			if err != nil {
 				t.Errorf("error '%s':", err)
 			}
@@ -307,11 +307,11 @@ func TestSimulateWithFile(t *testing.T) {
 
 			// NOTE: This tests the pattern against the entire file content at once.
 			// Updated call to Simulate, ignoring the captures slice
-			actualMatch, _, err := nfasimulator.Simulate(fileBytes, tc.pattern)
+			captures, err := nfasimulator.Simulate(fileBytes, tc.pattern)
 			if err != nil {
 				t.Errorf("Simulate returned an unexpected error: %v", err)
 			}
-
+			_, actualMatch := <- captures
 			if actualMatch != tc.expectedMatch {
 				t.Errorf("Pattern '%s' on file with content '%s': expected match %v, but got %v",
 					tc.pattern, tc.fileContent, tc.expectedMatch, actualMatch)

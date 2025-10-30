@@ -6,7 +6,6 @@ import (
 	"github.com/mmarchesotti/build-your-own-grep/internal/ast"
 	"github.com/mmarchesotti/build-your-own-grep/internal/matcher"
 	"github.com/mmarchesotti/build-your-own-grep/internal/nfa"
-	"github.com/mmarchesotti/build-your-own-grep/internal/parser"
 	"github.com/mmarchesotti/build-your-own-grep/internal/predefinedclass"
 )
 
@@ -170,15 +169,11 @@ func processNode(n ast.ASTNode) (nfa.Fragment, error) {
 	}
 }
 
-func Build(inputPattern string) (nfa.Fragment, int, error) {
-	tree, captureCount, parseErr := parser.Parse(inputPattern)
-	if parseErr != nil {
-		return nfa.Fragment{}, 0, parseErr
-	}
+func Build(tree ast.ASTNode) (nfa.Fragment, error) {
 
 	mainFrag, processErr := processNode(tree)
 	if processErr != nil {
-		return nfa.Fragment{}, 0, processErr
+		return nfa.Fragment{}, processErr
 	}
 
 	startState := &nfa.CaptureStartState{
@@ -199,5 +194,5 @@ func Build(inputPattern string) (nfa.Fragment, int, error) {
 		Out:   []*nfa.State{},
 	}
 
-	return finalFragment, captureCount, nil
+	return finalFragment, nil
 }

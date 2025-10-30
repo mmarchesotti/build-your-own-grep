@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/mmarchesotti/build-your-own-grep/internal/ast"
-	"github.com/mmarchesotti/build-your-own-grep/internal/lexer"
 	"github.com/mmarchesotti/build-your-own-grep/internal/token"
 )
 
@@ -161,11 +160,7 @@ func (p *Parser) parseAtom() (ast.ASTNode, error) {
 	}
 }
 
-func Parse(inputPattern string) (ast.ASTNode, int, error) {
-	tokens, err := lexer.Tokenize(inputPattern)
-	if err != nil {
-		return nil, 0, err
-	}
+func Parse(tokens []token.Token) (ast.ASTNode, int, error) {
 	parser := NewParser(tokens)
 	tree, err := parser.parseExpression()
 	if err != nil {
